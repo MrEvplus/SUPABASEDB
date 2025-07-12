@@ -10,44 +10,59 @@ import duckdb
 def load_data_from_supabase():
     st.sidebar.markdown("### 🌐 Origine: Supabase Storage (Parquet via DuckDB)")
 
-    # URL firmato (signed URL) del Parquet caricato su Supabase Storage
     parquet_url = st.sidebar.text_input(
         "Parquet file URL (Supabase Storage):",
-        value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet/partite.parquet?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
+        value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet/partite.parquet?token=..."
     )
 
-    country = st.sidebar.text_input("Campionato (country):", value="ITALY")
+    # Carico TUTTO il Parquet senza filtri
+    query_all = f"""
+        SELECT *
+        FROM read_parquet('{parquet_url}')
+    """
 
+    try:
+        df_all = duckdb.query(query_all).to_df()
+    except Exception as e:
+        st.error(f"❌ Errore DuckDB: {str(e)}")
+        st.stop()
+
+    if df_all.empty:
+        st.warning("⚠️ Nessun dato trovato nel Parquet.")
+        st.stop()
+
+    # Estraggo campionati disponibili
+    if "country" in df_all.columns:
+        campionati_disponibili = sorted(df_all["country"].dropna().unique())
+    else:
+        campionati_disponibili = []
+
+    # Tendina campionati
+    campionato_scelto = st.sidebar.selectbox(
+        "Seleziona Campionato:",
+        [""] + campionati_disponibili,
+        index=1 if len(campionati_disponibili) > 0 else 0,
+        key="selectbox_campionato_duckdb"
+    )
+
+    if campionato_scelto == "":
+        st.info("ℹ️ Seleziona un campionato per procedere.")
+        st.stop()
+
+    # Filtra per campionato scelto
+    df_filtered = df_all[df_all["country"] == campionato_scelto]
+
+    # Stagioni
     seasons_text = st.sidebar.text_input(
         "Stagioni separate da virgola (es. 2022/2023,2023/2024):",
         value="2022/2023"
     )
     seasons = [s.strip() for s in seasons_text.split(",") if s.strip()]
 
-    where_conditions = [f"country = '{country}'"]
-    if seasons:
-        season_list = ", ".join([f"'{s}'" for s in seasons])
-        where_conditions.append(f"sezonul IN ({season_list})")
+    if "sezonul" in df_filtered.columns and seasons:
+        df_filtered = df_filtered[df_filtered["sezonul"].isin(seasons)]
 
-    where_clause = " AND ".join(where_conditions)
-
-    query = f"""
-        SELECT *
-        FROM read_parquet('{parquet_url}')
-        WHERE {where_clause}
-    """
-
-    try:
-        df = duckdb.query(query).to_df()
-    except Exception as e:
-        st.error(f"❌ Errore DuckDB: {str(e)}")
-        st.stop()
-
-    if df.empty:
-        st.warning("⚠️ Nessun dato trovato nel Parquet.")
-        st.stop()
-
-    # Mappa colonne come nel tuo codice originale
+    # Mapping colonne
     col_map = {
         "country": "country",
         "sezonul": "Stagione",
@@ -63,51 +78,16 @@ def load_data_from_supabase():
         "mgolh": "minuti goal segnato home",
         "mgola": "minuti goal segnato away"
     }
-    df.rename(columns=col_map, inplace=True)
+    df_filtered.rename(columns=col_map, inplace=True)
 
-    # Conversioni eventuali virgole in punti
-    for col in df.columns:
-        if df[col].dtype == object:
-            df[col] = df[col].str.replace(",", ".")
+    for col in df_filtered.columns:
+        if df_filtered[col].dtype == object:
+            df_filtered[col] = df_filtered[col].str.replace(",", ".")
 
-    df = df.apply(pd.to_numeric, errors="ignore")
+    df_filtered = df_filtered.apply(pd.to_numeric, errors="ignore")
 
-    # Conversione date se presente
-    if "Data" in df.columns:
-        df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
-
-    if "country" in df.columns:
-        campionati_disponibili = sorted(df["country"].dropna().unique())
-    else:
-        campionati_disponibili = []
-
-    campionato_scelto = st.sidebar.selectbox(
-        "Seleziona Campionato:",
-        [""] + campionati_disponibili,
-        index=1 if country in campionati_disponibili else 0,
-        key="selectbox_campionato_duckdb"
-    )
-
-    if campionato_scelto == "":
-        st.info("ℹ️ Seleziona un campionato per procedere.")
-        st.stop()
-
-    df_filtered = df[df["country"] == campionato_scelto]
-
-    if "Stagione" in df_filtered.columns:
-        stagioni_disponibili = sorted(df_filtered["Stagione"].dropna().unique())
-    else:
-        stagioni_disponibili = []
-
-    stagioni_scelte = st.sidebar.multiselect(
-        "Seleziona le stagioni da includere nell'analisi:",
-        options=stagioni_disponibili,
-        default=stagioni_disponibili,
-        key="multiselect_stagioni_duckdb"
-    )
-
-    if stagioni_scelte:
-        df_filtered = df_filtered[df_filtered["Stagione"].isin(stagioni_scelte)]
+    if "Data" in df_filtered.columns:
+        df_filtered["Data"] = pd.to_datetime(df_filtered["Data"], errors="coerce")
 
     st.sidebar.write(f"✅ Righe caricate da Parquet: {len(df_filtered)}")
 
