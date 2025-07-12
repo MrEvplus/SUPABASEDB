@@ -4,12 +4,6 @@ import numpy as np
 import altair as alt
 from datetime import datetime
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import altair as alt
-from datetime import datetime
-
 # --------------------------------------------------------
 # ENTRY POINT
 # --------------------------------------------------------
@@ -50,15 +44,29 @@ def run_team_stats(df, db_selected):
         set(df_filtered["Away"].dropna().unique())
     )
 
+    # ✅ INIZIALIZZA SESSION STATE
+    if "team_1" not in st.session_state:
+        st.session_state["team_1"] = teams_available[0] if teams_available else ""
+
+    if "team_2" not in st.session_state:
+        st.session_state["team_2"] = ""
+
     col1, col2 = st.columns(2)
 
     with col1:
-        team_1 = st.selectbox("Seleziona Squadra 1", options=teams_available)
+        team_1 = st.selectbox(
+            "Seleziona Squadra 1",
+            options=teams_available,
+            index=teams_available.index(st.session_state["team_1"]) if st.session_state["team_1"] in teams_available else 0,
+            key="team_1"
+        )
 
     with col2:
         team_2 = st.selectbox(
             "Seleziona Squadra 2 (facoltativa - per confronto)",
-            options=[""] + teams_available
+            options=[""] + teams_available,
+            index=([""] + teams_available).index(st.session_state["team_2"]) if st.session_state["team_2"] in teams_available else 0,
+            key="team_2"
         )
 
     if team_1:
@@ -88,7 +96,6 @@ def show_team_macro_stats(df, team, venue):
     data_debug = data.copy()
     data_debug["played_flag"] = data_debug.apply(is_match_played, axis=1)
 
-    # ✅ ESPANDER PER LE PARTITE FILTRATE DELLA SQUADRA SELEZIONATA
     if not data_debug.empty:
         with st.expander(f"🔎 Mostra tutte le partite filtrate di {team}"):
             st.dataframe(
@@ -159,17 +166,6 @@ def show_team_macro_stats(df, team, venue):
     st.dataframe(df_stats.set_index("Venue"), use_container_width=True)
 
 # --------------------------------------------------------
-# RESTO DELLE FUNZIONI
-# --------------------------------------------------------
-
-# Tutte le altre funzioni (is_match_played, build_timeline, etc.)
-# rimangono identiche al tuo file originale. Non le riscrivo qui
-# solo per evitare ripetizioni, ma **vanno lasciate nel file**!
-
-# Esempio di funzione che va mantenuta:
-# def is_match_played(row):
-#     ...
-# --------------------------------------------------------
 # LOGICA PER MATCH GIOCATO
 # --------------------------------------------------------
 def is_match_played(row):
@@ -185,6 +181,7 @@ def is_match_played(row):
         return True
 
     return False
+
 # --------------------------------------------------------
 # TIMELINE
 # --------------------------------------------------------

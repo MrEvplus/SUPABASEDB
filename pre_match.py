@@ -4,7 +4,6 @@ from utils import label_match
 from squadre import compute_team_macro_stats
 from macros import run_macro_stats
 
-
 # --------------------------------------------------------
 # FUNZIONE PER OTTENERE LEAGUE DATA BY LABEL
 # --------------------------------------------------------
@@ -67,6 +66,7 @@ def format_value(val, is_roi=False):
         return f"🔴 {val:.2f}{suffix}"
     else:
         return f"0.00{suffix}"
+
 # --------------------------------------------------------
 # CALCOLO BACK / LAY STATS (versione corretta)
 # --------------------------------------------------------
@@ -76,7 +76,6 @@ def calculate_back_lay(filtered_df):
     - profitti back e lay
     - ROI% back e lay
     per HOME, DRAW, AWAY su tutte le righe di filtered_df.
-
     Per il LAY, la responsabilità è fissa a 1 unità.
     """
     profits_back = {"HOME": 0, "DRAW": 0, "AWAY": 0}
@@ -135,7 +134,6 @@ def calculate_back_lay(filtered_df):
 
     return profits_back, rois_back, profits_lay, rois_lay, matches
 
-
 # --------------------------------------------------------
 # RUN PRE MATCH PAGE
 # --------------------------------------------------------
@@ -155,13 +153,30 @@ def run_pre_match(df, db_selected):
         set(df[df["country"] == db_selected]["Away"].dropna().unique())
     )
 
+    # ✅ Session State inizializzazione
+    if "squadra_casa" not in st.session_state:
+        st.session_state["squadra_casa"] = teams_available[0] if teams_available else ""
+
+    if "squadra_ospite" not in st.session_state:
+        st.session_state["squadra_ospite"] = teams_available[0] if teams_available else ""
+
     col1, col2 = st.columns(2)
 
     with col1:
-        squadra_casa = st.selectbox("Seleziona Squadra Casa", options=teams_available)
+        squadra_casa = st.selectbox(
+            "Seleziona Squadra Casa",
+            options=teams_available,
+            index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
+            key="squadra_casa"
+        )
 
     with col2:
-        squadra_ospite = st.selectbox("Seleziona Squadra Ospite", options=teams_available)
+        squadra_ospite = st.selectbox(
+            "Seleziona Squadra Ospite",
+            options=teams_available,
+            index=teams_available.index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
+            key="squadra_ospite"
+        )
 
     col1, col2, col3 = st.columns(3)
 
@@ -180,13 +195,11 @@ def run_pre_match(df, db_selected):
         implied_away = round(100 / odd_away, 2)
         st.markdown(f"**Probabilità Ospite ({squadra_ospite}):** {implied_away}%")
 
-
     if squadra_casa and squadra_ospite and squadra_casa != squadra_ospite:
         implied_home = round(100 / odd_home, 2)
         implied_draw = round(100 / odd_draw, 2)
         implied_away = round(100 / odd_away, 2)
 
-        
         label = label_from_odds(odd_home, odd_away)
         label_type = get_label_type(label)
 
@@ -327,11 +340,11 @@ def run_pre_match(df, db_selected):
                     "LABEL": row["LABEL"],
                     "SEGNO": outcome,
                     "Matches": row["MATCHES"],
-                    "Win %": row[f"BACK WIN% {outcome}"],
-                    "Back Pts": row[f"BACK PTS {outcome}"],
-                    "Back ROI %": row[f"BACK ROI% {outcome}"],
-                    "Lay Pts": row[f"Lay pts {outcome}"],
-                    "Lay ROI %": row[f"lay ROI% {outcome}"]
+                    "Win %": row.get(f"BACK WIN% {outcome}", 0),
+                    "Back Pts": row.get(f"BACK PTS {outcome}", format_value(0)),
+                    "Back ROI %": row.get(f"BACK ROI% {outcome}", format_value(0, is_roi=True)),
+                    "Lay Pts": row.get(f"Lay pts {outcome}", format_value(0)),
+                    "Lay ROI %": row.get(f"lay ROI% {outcome}", format_value(0, is_roi=True))
                 })
 
         df_long = pd.DataFrame(rows_long)
