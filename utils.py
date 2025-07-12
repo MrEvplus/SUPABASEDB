@@ -7,15 +7,19 @@ import duckdb
 # Caricamento da DuckDB + Parquet su Supabase Storage
 # ----------------------------------------------------------
 
+import duckdb
+import pandas as pd
+import streamlit as st
+
 def load_data_from_supabase():
     st.sidebar.markdown("### 🌐 Origine: Supabase Storage (Parquet via DuckDB)")
 
     parquet_url = st.sidebar.text_input(
         "Parquet file URL (Supabase Storage):",
-        value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet/partite.parquet?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
+        value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet?token=..."
     )
 
-    # Carico TUTTO il Parquet senza filtri
+    # Carico TUTTO il parquet senza filtri
     query_all = f"""
         SELECT *
         FROM read_parquet('{parquet_url}')
@@ -31,13 +35,13 @@ def load_data_from_supabase():
         st.warning("⚠️ Nessun dato trovato nel Parquet.")
         st.stop()
 
-    # Estraggo campionati disponibili
+    # Campionati disponibili
     if "country" in df_all.columns:
         campionati_disponibili = sorted(df_all["country"].dropna().unique())
     else:
         campionati_disponibili = []
 
-    # Tendina campionati
+    # Seleziona campionato
     campionato_scelto = st.sidebar.selectbox(
         "Seleziona Campionato:",
         [""] + campionati_disponibili,
@@ -49,18 +53,25 @@ def load_data_from_supabase():
         st.info("ℹ️ Seleziona un campionato per procedere.")
         st.stop()
 
-    # Filtra per campionato scelto
+    # Filtra solo il campionato scelto
     df_filtered = df_all[df_all["country"] == campionato_scelto]
 
-    # Stagioni
-    seasons_text = st.sidebar.text_input(
-        "Stagioni separate da virgola (es. 2022/2023,2023/2024):",
-        value="2022/2023"
-    )
-    seasons = [s.strip() for s in seasons_text.split(",") if s.strip()]
+    # 🔥 Estrai stagioni disponibili da questo campionato
+    if "sezonul" in df_filtered.columns:
+        stagioni_disponibili = sorted(df_filtered["sezonul"].dropna().unique())
+    else:
+        stagioni_disponibili = []
 
-    if "sezonul" in df_filtered.columns and seasons:
-        df_filtered = df_filtered[df_filtered["sezonul"].isin(seasons)]
+    # Menu a tendina stagioni (anche se vuoto)
+    stagioni_scelte = st.sidebar.multiselect(
+        "Seleziona le stagioni da includere nell'analisi:",
+        options=stagioni_disponibili,
+        default=stagioni_disponibili,
+        key="multiselect_stagioni_duckdb"
+    )
+
+    if stagioni_scelte:
+        df_filtered = df_filtered[df_filtered["sezonul"].isin(stagioni_scelte)]
 
     # Mapping colonne
     col_map = {
