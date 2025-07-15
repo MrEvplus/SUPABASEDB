@@ -2,11 +2,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json
+import requests
+import base64
+from datetime import date
 from macros import run_macro_stats
 from squadre import run_team_stats
 from pre_match import run_pre_match
 from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
+from api_football_utils import get_fixtures_today_for_countries
 
 # -------------------------------------------------------
 # CONFIGURAZIONE PAGINA
@@ -18,7 +22,6 @@ st.set_page_config(
 
 st.sidebar.title("📊 Trading Dashboard")
 
-
 # -------------------------------------------------------
 # MENU PRINCIPALE
 # -------------------------------------------------------
@@ -28,13 +31,15 @@ menu_option = st.sidebar.radio(
     [
         "Macro Stats per Campionato",
         "Statistiche per Squadre",
-        "Confronto Pre Match"
+        "Confronto Pre Match",
+        "Partite del Giorno"
     ]
 )
 
 # -------------------------------------------------------
 # SELEZIONE ORIGINE DATI
 # -------------------------------------------------------
+
 origine_dati = st.sidebar.radio(
     "Seleziona origine dati:",
     ["Supabase", "Upload Manuale"]
@@ -48,6 +53,7 @@ else:
 # -------------------------------------------------------
 # MAPPING COLONNE COMPLETO
 # -------------------------------------------------------
+
 col_map = {
     "country": "country",
     "sezonul": "Stagione",
@@ -167,7 +173,34 @@ if "Data" in df.columns:
 
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
+
 elif menu_option == "Statistiche per Squadre":
     run_team_stats(df, db_selected)
+
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
+
+elif menu_option == "Partite del Giorno":
+    st.title("📅 Partite del Giorno - Campionati presenti nel Database")
+
+    # Ottieni lista dei campionati presenti nel database
+    campionati_db = sorted(df["country"].dropna().unique().tolist())
+
+    st.info(f"Campionati presenti nel DB: {campionati_db}")
+
+    if st.button("Carica Partite di Oggi"):
+        df_matches = get_fixtures_today_for_countries(campionati_db)
+
+        if df_matches.empty:
+            st.info("⚠️ Nessuna partita trovata per oggi nei campionati presenti nel database.")
+        else:
+            st.success(f"Trovate {len(df_matches)} partite nei campionati presenti nel DB.")
+            st.dataframe(df_matches, use_container_width=True)
+
+            csv = df_matches.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="💾 Scarica CSV",
+                data=csv,
+                file_name="partite_oggi.csv",
+                mime="text/csv"
+            )
