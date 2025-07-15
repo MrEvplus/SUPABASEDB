@@ -10,6 +10,7 @@ from squadre import run_team_stats
 from pre_match import run_pre_match
 from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
+
 from api_football_utils import get_fixtures_today_for_countries
 
 # -------------------------------------------------------
@@ -32,7 +33,8 @@ menu_option = st.sidebar.radio(
         "Macro Stats per Campionato",
         "Statistiche per Squadre",
         "Confronto Pre Match",
-        "Partite del Giorno"
+        "Partite del Giorno",
+        "Scarica Mappatura Leghe da API"
     ]
 )
 
@@ -180,16 +182,76 @@ elif menu_option == "Statistiche per Squadre":
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
 
+elif menu_option == "Scarica Mappatura Leghe da API":
+    st.title("🔎 Scarica Mappatura Leghe da API-FOOTBALL")
+
+    if st.button("Scarica elenco leghe da API-FOOTBALL"):
+        API_KEY = st.secrets["API_FOOTBALL_KEY"]
+
+        url = "https://v3.football.api-sports.io/leagues"
+
+        headers = {
+            'x-rapidapi-host': "v3.football.api-sports.io",
+            'x-rapidapi-key': API_KEY
+        }
+
+        response = requests.get(url, headers=headers)
+        data = response.json()
+
+        leagues = []
+
+        for l in data.get("response", []):
+            country_name = l["country"]["name"]
+            league_name = l["league"]["name"]
+            league_id = l["league"]["id"]
+
+            leagues.append({
+                "Country": country_name,
+                "League": league_name,
+                "LeagueID": league_id
+            })
+
+        df_leagues = pd.DataFrame(leagues)
+
+        st.success(f"Scaricate {len(df_leagues)} leghe.")
+        st.dataframe(df_leagues, use_container_width=True)
+
+        csv = df_leagues.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="💾 Scarica CSV mapping leghe",
+            data=csv,
+            file_name="leagues_mapping.csv",
+            mime="text/csv"
+        )
+
 elif menu_option == "Partite del Giorno":
     st.title("📅 Partite del Giorno - Campionati presenti nel Database")
 
-    # Ottieni lista dei campionati presenti nel database
+    # Campionati dal DB
     campionati_db = sorted(df["country"].dropna().unique().tolist())
-
     st.info(f"Campionati presenti nel DB: {campionati_db}")
 
+    # Mapping manuale (esempio)
+    country_mapping = {
+        "Ita1": "Italy",
+        "Spa1": "Spain",
+        "Ger1": "Germany",
+        "Fra1": "France",
+        "Eng1": "England",
+        "Ice1": "Iceland",
+        # aggiungi tutti i tuoi codici reali!
+    }
+
+    # Mappa i nomi verso quelli API
+    campionati_api = [
+        country_mapping.get(c, None) for c in campionati_db
+    ]
+    campionati_api = [c for c in campionati_api if c is not None]
+
+    st.info(f"Campionati convertiti per API Football: {campionati_api}")
+
     if st.button("Carica Partite di Oggi"):
-        df_matches = get_fixtures_today_for_countries(campionati_db)
+        df_matches = get_fixtures_today_for_countries(campionati_api)
 
         if df_matches.empty:
             st.info("⚠️ Nessuna partita trovata per oggi nei campionati presenti nel database.")
