@@ -10,7 +10,6 @@ from squadre import run_team_stats
 from pre_match import run_pre_match
 from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
-
 from api_football_utils import get_fixtures_today_for_countries
 
 # -------------------------------------------------------
@@ -187,6 +186,7 @@ elif menu_option == "Scarica Mappatura Leghe da API":
 
     if st.button("Scarica elenco leghe da API-FOOTBALL"):
         API_KEY = st.secrets["API_FOOTBALL_KEY"]
+        st.write("✅ Chiave API caricata:", API_KEY)
 
         url = "https://v3.football.api-sports.io/leagues"
 
@@ -196,33 +196,41 @@ elif menu_option == "Scarica Mappatura Leghe da API":
         }
 
         response = requests.get(url, headers=headers)
+
+        st.write("✅ Status code API:", response.status_code)
+
         data = response.json()
+        st.write("✅ JSON restituito dalla API:")
+        st.json(data)
 
-        leagues = []
+        if "response" not in data or len(data["response"]) == 0:
+            st.warning("⚠️ Nessuna lega trovata o errore nella risposta API.")
+        else:
+            leagues = []
 
-        for l in data.get("response", []):
-            country_name = l["country"]["name"]
-            league_name = l["league"]["name"]
-            league_id = l["league"]["id"]
+            for l in data.get("response", []):
+                country_name = l["country"]["name"]
+                league_name = l["league"]["name"]
+                league_id = l["league"]["id"]
 
-            leagues.append({
-                "Country": country_name,
-                "League": league_name,
-                "LeagueID": league_id
-            })
+                leagues.append({
+                    "Country": country_name,
+                    "League": league_name,
+                    "LeagueID": league_id
+                })
 
-        df_leagues = pd.DataFrame(leagues)
+            df_leagues = pd.DataFrame(leagues)
 
-        st.success(f"Scaricate {len(df_leagues)} leghe.")
-        st.dataframe(df_leagues, use_container_width=True)
+            st.success(f"Scaricate {len(df_leagues)} leghe.")
+            st.dataframe(df_leagues, use_container_width=True)
 
-        csv = df_leagues.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="💾 Scarica CSV mapping leghe",
-            data=csv,
-            file_name="leagues_mapping.csv",
-            mime="text/csv"
-        )
+            csv = df_leagues.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="💾 Scarica CSV mapping leghe",
+                data=csv,
+                file_name="leagues_mapping.csv",
+                mime="text/csv"
+            )
 
 elif menu_option == "Partite del Giorno":
     st.title("📅 Partite del Giorno - Campionati presenti nel Database")
