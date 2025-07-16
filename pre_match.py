@@ -93,7 +93,6 @@ def calculate_back_lay(filtered_df):
         )
 
         for outcome in ["HOME", "DRAW", "AWAY"]:
-            # Leggi la quota corretta
             if outcome == "HOME":
                 price = row.get("Odd home", None)
             elif outcome == "DRAW":
@@ -144,7 +143,6 @@ def run_pre_match(df, db_selected):
         df = df.copy()
         df["Label"] = df.apply(label_match, axis=1)
 
-    # Rimuovi eventuali spazi extra nei nomi squadre
     df["Home"] = df["Home"].str.strip()
     df["Away"] = df["Away"].str.strip()
 

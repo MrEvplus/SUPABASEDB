@@ -45,11 +45,11 @@ def run_team_stats(df, db_selected):
     )
 
     # ✅ INIZIALIZZA SESSION STATE
-    if "team_1" not in st.session_state:
-        st.session_state["team_1"] = teams_available[0] if teams_available else ""
+    if "squadra_casa" not in st.session_state:
+        st.session_state["squadra_casa"] = teams_available[0] if teams_available else ""
 
-    if "team_2" not in st.session_state:
-        st.session_state["team_2"] = ""
+    if "squadra_ospite" not in st.session_state:
+        st.session_state["squadra_ospite"] = ""
 
     col1, col2 = st.columns(2)
 
@@ -57,16 +57,16 @@ def run_team_stats(df, db_selected):
         team_1 = st.selectbox(
             "Seleziona Squadra 1",
             options=teams_available,
-            index=teams_available.index(st.session_state["team_1"]) if st.session_state["team_1"] in teams_available else 0,
-            key="team_1"
+            index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
+            key="squadra_casa"
         )
 
     with col2:
         team_2 = st.selectbox(
             "Seleziona Squadra 2 (facoltativa - per confronto)",
             options=[""] + teams_available,
-            index=([""] + teams_available).index(st.session_state["team_2"]) if st.session_state["team_2"] in teams_available else 0,
-            key="team_2"
+            index=([""] + teams_available).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
+            key="squadra_ospite"
         )
 
     if team_1:
