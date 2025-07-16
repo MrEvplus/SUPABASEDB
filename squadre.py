@@ -57,20 +57,20 @@ def run_team_stats(df, db_selected):
     col1, col2 = st.columns(2)
 
     with col1:
-        squadra_casa = st.selectbox(
-            "Seleziona Squadra 1",
-            options=teams_available,
-            index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
-            key="squadra_casa"
-        )
+         st.selectbox(
+             "Seleziona Squadra 1",
+              options=teams_available,
+              index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
+              key="squadra_casa"
+         )
 
     with col2:
-        squadra_ospite = st.selectbox(
-            "Seleziona Squadra 2 (facoltativa - per confronto)",
-            options=[""] + teams_available,
-            index=([""] + teams_available).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
-            key="squadra_ospite"
-        )
+         st.selectbox(
+             "Seleziona Squadra 2 (facoltativa - per confronto)",
+             options=[""] + teams_available,
+             index=([""] + teams_available).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
+             key="squadra_ospite"
+         )
 
     # Debug (opzionale)
     st.sidebar.write("✅ DEBUG selezione squadre:")
