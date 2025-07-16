@@ -52,6 +52,24 @@ else:
     df, db_selected = load_data_from_file()
 
 # -------------------------------------------------------
+# SESSION STATE PER SELEZIONE SQUADRE
+# -------------------------------------------------------
+
+if "squadra_casa" not in st.session_state:
+    st.session_state["squadra_casa"] = ""
+
+if "squadra_ospite" not in st.session_state:
+    st.session_state["squadra_ospite"] = ""
+
+if "campionato_corrente" not in st.session_state:
+    st.session_state["campionato_corrente"] = db_selected
+else:
+    if st.session_state["campionato_corrente"] != db_selected:
+        st.session_state["squadra_casa"] = ""
+        st.session_state["squadra_ospite"] = ""
+        st.session_state["campionato_corrente"] = db_selected
+
+# -------------------------------------------------------
 # MAPPING COLONNE COMPLETO
 # -------------------------------------------------------
 
@@ -235,11 +253,9 @@ elif menu_option == "Scarica Mappatura Leghe da API":
 elif menu_option == "Partite del Giorno":
     st.title("📅 Partite del Giorno - Campionati presenti nel Database")
 
-    # Campionati dal DB
     campionati_db = sorted(df["country"].dropna().unique().tolist())
     st.info(f"Campionati presenti nel DB: {campionati_db}")
 
-    # Mapping manuale (esempio)
     country_mapping = {
         "Ita1": "Italy",
         "Spa1": "Spain",
@@ -247,10 +263,8 @@ elif menu_option == "Partite del Giorno":
         "Fra1": "France",
         "Eng1": "England",
         "Ice1": "Iceland",
-        # aggiungi tutti i tuoi codici reali!
     }
 
-    # Mappa i nomi verso quelli API
     campionati_api = [
         country_mapping.get(c, None) for c in campionati_db
     ]
