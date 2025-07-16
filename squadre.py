@@ -57,36 +57,36 @@ def run_team_stats(df, db_selected):
     col1, col2 = st.columns(2)
 
     with col1:
-         st.selectbox(
-             "Seleziona Squadra 1",
-              options=teams_available,
-              index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
-              key="squadra_casa"
-         )
+        st.selectbox(
+            "Seleziona Squadra 1",
+            options=teams_available,
+            index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
+            key="squadra_casa"
+        )
 
     with col2:
-         st.selectbox(
-             "Seleziona Squadra 2 (facoltativa - per confronto)",
-             options=[""] + teams_available,
-             index=([""] + teams_available).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
-             key="squadra_ospite"
-         )
+        st.selectbox(
+            "Seleziona Squadra 2 (facoltativa - per confronto)",
+            options=[""] + teams_available,
+            index=([""] + teams_available).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
+            key="squadra_ospite"
+        )
 
     # Debug (opzionale)
     st.sidebar.write("✅ DEBUG selezione squadre:")
     st.sidebar.write("squadra_casa =", st.session_state.get("squadra_casa"))
     st.sidebar.write("squadra_ospite =", st.session_state.get("squadra_ospite"))
 
-    if squadra_casa:
-        st.subheader(f"✅ Statistiche Macro per {squadra_casa}")
-        show_team_macro_stats(df_filtered, squadra_casa, venue="Home")
+    if st.session_state["squadra_casa"]:
+        st.subheader(f"✅ Statistiche Macro per {st.session_state['squadra_casa']}")
+        show_team_macro_stats(df_filtered, st.session_state["squadra_casa"], venue="Home")
 
-    if squadra_ospite and squadra_ospite != squadra_casa:
-        st.subheader(f"✅ Statistiche Macro per {squadra_ospite}")
-        show_team_macro_stats(df_filtered, squadra_ospite, venue="Away")
+    if st.session_state["squadra_ospite"] and st.session_state["squadra_ospite"] != st.session_state["squadra_casa"]:
+        st.subheader(f"✅ Statistiche Macro per {st.session_state['squadra_ospite']}")
+        show_team_macro_stats(df_filtered, st.session_state["squadra_ospite"], venue="Away")
 
-        st.subheader(f"⚔️ Goal Patterns - {squadra_casa} vs {squadra_ospite}")
-        show_goal_patterns(df_filtered, squadra_casa, squadra_ospite, db_selected, seasons_selected[0])
+        st.subheader(f"⚔️ Goal Patterns - {st.session_state['squadra_casa']} vs {st.session_state['squadra_ospite']}")
+        show_goal_patterns(df_filtered, st.session_state["squadra_casa"], st.session_state["squadra_ospite"], db_selected, seasons_selected[0])
 
 # --------------------------------------------------------
 # MACRO STATS
@@ -189,7 +189,6 @@ def is_match_played(row):
         return True
 
     return False
-
 
 # --------------------------------------------------------
 # TIMELINE
