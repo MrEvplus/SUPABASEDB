@@ -65,3 +65,40 @@ def run_correct_score_ev(df):
 
     top_cs["EV Label"] = top_cs["EV"].apply(ev_label)
     st.dataframe(top_cs[["Risultato", "Frequenza", "% su totale", "Quota attuale", "EV Label"]], use_container_width=True)
+
+
+        # -------------------------------------------------------
+        # TOP 6 RISULTATI ESATTI PIÙ FREQUENTI
+        # -------------------------------------------------------
+        st.markdown("---")
+        st.markdown("🎯 **Top 6 Risultati Esatti nel Range**")
+
+        filtered_df = df.copy()
+        filtered_df["Label"] = filtered_df.apply(label_match, axis=1)
+        filtered_df = filtered_df[filtered_df["Label"] == label]
+        filtered_df = filtered_df.dropna(subset=["Home Goal FT", "Away Goal FT"])
+
+        filtered_df["CS"] = filtered_df["Home Goal FT"].astype(int).astype(str) + "-" + filtered_df["Away Goal FT"].astype(int).astype(str)
+
+        cs_counts = filtered_df["CS"].value_counts().reset_index()
+        cs_counts.columns = ["Correct Score", "Count"]
+        total_matches = cs_counts["Count"].sum()
+        cs_counts["%"] = cs_counts["Count"] / total_matches * 100
+        cs_counts["Quota"] = ""
+        cs_counts["EV"] = ""
+
+        def calculate_ev(prob, quota):
+            try:
+                quota = float(quota)
+                ev = round((prob * quota) - 100, 2)
+                return f"🟢 {ev}%" if ev > 0 else f"🔴 {ev}%"
+            except:
+                return ""
+
+        # Applica EV dinamico con quota inseribile
+        for i in cs_counts.index:
+            quota_input = st.text_input(f"Quota per {cs_counts.at[i, 'Correct Score']}", key=f"quota_cs_{i}")
+            cs_counts.at[i, "Quota"] = quota_input
+            cs_counts.at[i, "EV"] = calculate_ev(cs_counts.at[i, "%"], quota_input)
+
+        st.dataframe(cs_counts.head(6), use_container_width=True)
