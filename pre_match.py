@@ -376,7 +376,7 @@ def run_pre_match(df, db_selected):
         
         
         # -------------------------------------------------------
-        # ROI OVER / UNDER 2.5 (colonne: odd over 2,5 / odd under 2,5)
+        # ROI OVER / UNDER 2.5
         # -------------------------------------------------------
         st.markdown("---")
         st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
@@ -420,8 +420,8 @@ def run_pre_match(df, db_selected):
 
         for _, row in df_label.iterrows():
             goals = row["Home Goal FT"] + row["Away Goal FT"]
-            quote_over = row.get("odd over 2,5", None)
-            quote_under = row.get("odd under 2,5", None)
+            quote_over = row.get("cotao", None)
+            quote_under = row.get("cotau", None)
 
             if pd.isna(quote_over) or pd.isna(quote_under) or quote_over < 1.01 or quote_under < 1.01:
                 continue
@@ -463,3 +463,25 @@ def run_pre_match(df, db_selected):
             st.dataframe(df_roi, use_container_width=True)
         else:
             st.warning("⚠️ Nessuna partita valida trovata per il calcolo ROI Over/Under.")
+
+
+
+        # -------------------------------------------------------
+        # 🔍 ANALISI EXPECTED VALUE (EV) OVER / UNDER 2.5
+        # -------------------------------------------------------
+        st.markdown("## 🧠 Expected Value (EV) - Over/Under 2.5")
+
+        if total > 0:
+            col1, col2 = st.columns(2)
+            with col1:
+                quota_attuale_ov = st.number_input("📥 Quota attuale Over 2.5", min_value=1.01, step=0.01, value=2.00)
+            with col2:
+                quota_attuale_un = st.number_input("📥 Quota attuale Under 2.5", min_value=1.01, step=0.01, value=1.80)
+
+            ev_over = round((quota_attuale_ov * (pct_over / 100)) - 1, 3)
+            ev_under = round((quota_attuale_un * (pct_under / 100)) - 1, 3)
+
+            st.markdown(f"**📈 EV Over 2.5:** `{ev_over}` {'🟢 EV+ (valore)' if ev_over > 0 else '🔴 EV- (no valore)' if ev_over < 0 else '⚪️ Neutro'}")
+            st.markdown(f"**📉 EV Under 2.5:** `{ev_under}` {'🟢 EV+ (valore)' if ev_under > 0 else '🔴 EV- (no valore)' if ev_under < 0 else '⚪️ Neutro'}")
+
+            st.caption("EV = (Quota × Probabilità Storica) - 1")
