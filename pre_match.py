@@ -375,10 +375,10 @@ def run_pre_match(df, db_selected):
         
         
         
+
         # -------------------------------------------------------
-        # ROI OVER / UNDER 2.5
+        # ⚖️ ROI OVER / UNDER 2.5 con quote reali dal database
         # -------------------------------------------------------
-        st.markdown("---")
         st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
 
         apply_team_filter = st.checkbox("🔍 Calcola ROI solo sui match delle squadre selezionate che rientrano nel range (label)", value=True)
@@ -394,12 +394,15 @@ def run_pre_match(df, db_selected):
                 (df_label["Home"] == st.session_state["squadra_casa"]) | (df_label["Away"] == st.session_state["squadra_ospite"])
             ]
 
-        # DEBUG: Mostra partite escluse
         st.markdown("### 🔍 DEBUG - Partite incluse nel ROI Over/Under")
         st.write("Totali partite filtrate (Label + Squadre):", len(df_label))
 
-        excluded_df = df_label[df_label["Home Goal FT"].isna() | df_label["Away Goal FT"].isna()]
-        included_df = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
+        excluded_df = df_label[
+            df_label["Home Goal FT"].isna() | df_label["Away Goal FT"].isna()
+        ]
+        included_df = df_label[
+            df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()
+        ]
 
         st.write("✅ Partite incluse nel calcolo ROI (gol disponibili):", len(included_df))
         st.write("❌ Partite escluse (mancano i gol):", len(excluded_df))
@@ -414,21 +417,20 @@ def run_pre_match(df, db_selected):
         profit_under = 0
         over_hits = 0
         under_hits = 0
-
         quote_over_list = []
         quote_under_list = []
 
         for _, row in df_label.iterrows():
             goals = row["Home Goal FT"] + row["Away Goal FT"]
-            quote_over = row.get("cotao", None)
-            quote_under = row.get("cotau", None)
+            quote_over = row.get("odd over 2,5", None)
+            quote_under = row.get("odd under 2,5", None)
 
             if pd.isna(quote_over) or pd.isna(quote_under) or quote_over < 1.01 or quote_under < 1.01:
                 continue
 
-            total += 1
             quote_over_list.append(quote_over)
             quote_under_list.append(quote_under)
+            total += 1
 
             if goals > 2.5:
                 over_hits += 1
@@ -459,19 +461,13 @@ def run_pre_match(df, db_selected):
                 "Profitto Under": round(profit_under, 2),
                 "Match Analizzati": total
             }])
-
             st.dataframe(df_roi, use_container_width=True)
-        else:
-            st.warning("⚠️ Nessuna partita valida trovata per il calcolo ROI Over/Under.")
 
+            # -------------------------------------------------------
+            # 🧠 EV OVER / UNDER 2.5
+            # -------------------------------------------------------
+            st.markdown("## 🧠 Expected Value (EV) - Over/Under 2.5")
 
-
-        # -------------------------------------------------------
-        # 🔍 ANALISI EXPECTED VALUE (EV) OVER / UNDER 2.5
-        # -------------------------------------------------------
-        st.markdown("## 🧠 Expected Value (EV) - Over/Under 2.5")
-
-        if total > 0:
             col1, col2 = st.columns(2)
             with col1:
                 quota_attuale_ov = st.number_input("📥 Quota attuale Over 2.5", min_value=1.01, step=0.01, value=2.00)
@@ -484,4 +480,7 @@ def run_pre_match(df, db_selected):
             st.markdown(f"**📈 EV Over 2.5:** `{ev_over}` {'🟢 EV+ (valore)' if ev_over > 0 else '🔴 EV- (no valore)' if ev_over < 0 else '⚪️ Neutro'}")
             st.markdown(f"**📉 EV Under 2.5:** `{ev_under}` {'🟢 EV+ (valore)' if ev_under > 0 else '🔴 EV- (no valore)' if ev_under < 0 else '⚪️ Neutro'}")
 
-            st.caption("EV = (Quota × Probabilità Storica) - 1")
+            st.caption("Formula EV = (Quota × Probabilità Storica) - 1")
+
+        else:
+            st.warning("⚠️ Nessuna partita valida trovata per il calcolo ROI Over/Under.")
