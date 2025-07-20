@@ -381,9 +381,7 @@ def run_pre_match(df, db_selected):
         st.markdown("---")
         st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
 
-        over_quote = st.number_input("📈 Inserisci Quota Over 2.5", min_value=1.01, value=1.90, step=0.01)
-        under_quote = st.number_input("📉 Inserisci Quota Under 2.5", min_value=1.01, value=1.90, step=0.01)
-
+                
         apply_team_filter = st.checkbox("🔍 Calcola ROI solo sui match delle squadre selezionate che rientrano nel range (label)", value=True)
 
         commission = 0.045
@@ -424,11 +422,11 @@ def run_pre_match(df, db_selected):
             goals = row["Home Goal FT"] + row["Away Goal FT"]
             if goals > 2.5:
                 over_hits += 1
-                profit_over += (over_quote - 1) * (1 - commission)
+                
                 profit_under -= 1
             else:
                 under_hits += 1
-                profit_under += (under_quote - 1) * (1 - commission)
+                
                 profit_over -= 1
             total += 1
 
