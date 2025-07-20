@@ -11,7 +11,7 @@ def run_ai_inference(df, db_selected):
 
     def ask_huggingface(question, context):
         payload = {
-            "inputs": f"Domanda: {question}\\nContesto: {context[:3000]}"
+            "inputs": f"Domanda: {question}\nContesto: {context[:3000]}"
         }
         response = requests.post(API_URL, headers=HEADERS, json=payload)
         try:
@@ -22,7 +22,7 @@ def run_ai_inference(df, db_selected):
     st.write(f"📊 Campionato selezionato: **{db_selected}**")
     st.write(f"📁 Righe disponibili nel database: {df.shape[0]}")
 
-    question = st.text_input("✍️ Inserisci la tua domanda in linguaggio naturale:")
+    question = st.text_input("✍️ Inserisci la tua domanda sul campionato")
 
     if question:
         with st.spinner("🤖 Elaborazione della risposta..."):
