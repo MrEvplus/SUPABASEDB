@@ -381,7 +381,6 @@ def run_pre_match(df, db_selected):
         st.markdown("---")
         st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
 
-                
         apply_team_filter = st.checkbox("🔍 Calcola ROI solo sui match delle squadre selezionate che rientrano nel range (label)", value=True)
 
         commission = 0.045
@@ -395,7 +394,6 @@ def run_pre_match(df, db_selected):
                 (df_label["Home"] == st.session_state["squadra_casa"]) | (df_label["Away"] == st.session_state["squadra_ospite"])
             ]
 
-        
         # DEBUG: Mostra partite escluse
         st.markdown("### 🔍 DEBUG - Partite incluse nel ROI Over/Under")
         st.write("Totali partite filtrate (Label + Squadre):", len(df_label))
@@ -409,8 +407,7 @@ def run_pre_match(df, db_selected):
         with st.expander("📋 Visualizza match esclusi"):
             st.dataframe(excluded_df[["Home", "Away", "Home Goal FT", "Away Goal FT"]])
 
-
-        df_label = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
+        df_label = included_df.copy()
 
         total = 0
         profit_over = 0
@@ -418,19 +415,33 @@ def run_pre_match(df, db_selected):
         over_hits = 0
         under_hits = 0
 
+        quote_over_list = []
+        quote_under_list = []
+
         for _, row in df_label.iterrows():
             goals = row["Home Goal FT"] + row["Away Goal FT"]
+            quote_over = row.get("Over 2.5", None)
+            quote_under = row.get("Under 2.5", None)
+
+            if pd.isna(quote_over) or pd.isna(quote_under) or quote_over < 1.01 or quote_under < 1.01:
+                continue
+
+            total += 1
+            quote_over_list.append(quote_over)
+            quote_under_list.append(quote_under)
+
             if goals > 2.5:
                 over_hits += 1
-                
+                profit_over += (quote_over - 1) * (1 - commission)
                 profit_under -= 1
             else:
                 under_hits += 1
-                
+                profit_under += (quote_under - 1) * (1 - commission)
                 profit_over -= 1
-            total += 1
 
         if total > 0:
+            avg_quote_over = round(sum(quote_over_list) / len(quote_over_list), 2)
+            avg_quote_under = round(sum(quote_under_list) / len(quote_under_list), 2)
             roi_over = round((profit_over / total) * 100, 2)
             roi_under = round((profit_under / total) * 100, 2)
             pct_over = round((over_hits / total) * 100, 2)
@@ -438,8 +449,8 @@ def run_pre_match(df, db_selected):
 
             df_roi = pd.DataFrame([{
                 "Linea": "2.5 Goals",
-                "Quote Over": "dal database",
-                "Quote Under": "dal database",
+                "Quote Over": avg_quote_over,
+                "Quote Under": avg_quote_under,
                 "% Over": f"{pct_over}%",
                 "% Under": f"{pct_under}%",
                 "ROI Over": f"{roi_over}%",
