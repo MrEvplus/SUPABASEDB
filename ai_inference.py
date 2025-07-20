@@ -37,6 +37,7 @@ def run_ai_inference(df, db_selected):
 
     st.write(f"📊 Campionato selezionato: **{db_selected}**")
     st.write(f"📁 Righe disponibili nel database: {df.shape[0]}")
+    st.dataframe(df.head(10))  # ✅ mostra le prime 10 righe per capire se tutto va
 
     question = st.text_input("✍️ Inserisci la tua domanda sul campionato:")
 
