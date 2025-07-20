@@ -11,6 +11,8 @@ from pre_match import run_pre_match
 from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
+from ai_inference import run_ai_inference
+
 
 # -------------------------------------------------------
 # CONFIGURAZIONE PAGINA
@@ -32,6 +34,7 @@ menu_option = st.sidebar.radio(
         "Macro Stats per Campionato",
         "Statistiche per Squadre",
         "Confronto Pre Match",
+	"Domande AI"  # ✅ aggiunto,
         "Partite del Giorno",
         "Scarica Mappatura Leghe da API"
     ]
@@ -198,6 +201,9 @@ elif menu_option == "Statistiche per Squadre":
 
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
+
+elif menu_option == "Domande AI":
+    run_ai_inference(df, db_selected)  # ✅ aggiunto per attivare l'intelligenza artificiale
 
 elif menu_option == "Scarica Mappatura Leghe da API":
     st.title("🔎 Scarica Mappatura Leghe da API-FOOTBALL")
