@@ -36,7 +36,8 @@ menu_option = st.sidebar.radio(
         "Confronto Pre Match",
 	"Domande AI",
         "Partite del Giorno",
-        "Scarica Mappatura Leghe da API"
+        "Scarica Mappatura Leghe da API",
+        "Correct Score EV"
     ]
 )
 
@@ -294,3 +295,8 @@ elif menu_option == "Partite del Giorno":
                 file_name="partite_oggi.csv",
                 mime="text/csv"
             )
+
+
+elif menu_option == "Correct Score EV":
+    from correct_score_ev_sezione import run_correct_score_ev
+    run_correct_score_ev(df)
