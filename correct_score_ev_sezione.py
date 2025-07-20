@@ -50,7 +50,7 @@ def run_correct_score_ev(df):
         col1.markdown(f"**{row['Risultato']}**")
         col2.markdown(f"{row['Frequenza']} volte")
         col3.markdown(f"{row['% su totale']}%")
-        quota = col4.number_input(f"Quota {row['Risultato']}", min_value=1.01, step=0.01, key=f"quota_cs_sezione_{i}")
+        quota = col4.number_input(f"Quota {row['Risultato']}", min_value=1.01, step=0.01, key=f"quota_cs_sezione_{label}_{i}")
         prob = row["% su totale"] / 100
         ev = (quota * prob) - 1
         top_cs.at[i, "Quota attuale"] = quota
