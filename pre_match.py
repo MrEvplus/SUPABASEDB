@@ -397,6 +397,21 @@ def run_pre_match(df, db_selected):
                 (df_label["Home"] == st.session_state["squadra_casa"]) | (df_label["Away"] == st.session_state["squadra_ospite"])
             ]
 
+        
+        # DEBUG: Mostra partite escluse
+        st.markdown("### 🔍 DEBUG - Partite incluse nel ROI Over/Under")
+        st.write("Totali partite filtrate (Label + Squadre):", len(df_label))
+
+        excluded_df = df_label[df_label["Home Goal FT"].isna() | df_label["Away Goal FT"].isna()]
+        included_df = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
+
+        st.write("✅ Partite incluse nel calcolo ROI (gol disponibili):", len(included_df))
+        st.write("❌ Partite escluse (mancano i gol):", len(excluded_df))
+
+        with st.expander("📋 Visualizza match esclusi"):
+            st.dataframe(excluded_df[["Home", "Away", "Home Goal FT", "Away Goal FT"]])
+
+
         df_label = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
 
         total = 0
