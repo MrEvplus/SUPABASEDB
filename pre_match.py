@@ -376,7 +376,7 @@ def run_pre_match(df, db_selected):
         
         
         # -------------------------------------------------------
-        # ROI OVER / UNDER 2.5
+        # ROI OVER / UNDER 2.5 (colonne: odd over 2,5 / odd under 2,5)
         # -------------------------------------------------------
         st.markdown("---")
         st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
@@ -420,8 +420,8 @@ def run_pre_match(df, db_selected):
 
         for _, row in df_label.iterrows():
             goals = row["Home Goal FT"] + row["Away Goal FT"]
-            quote_over = row.get("Over 2.5", None)
-            quote_under = row.get("Under 2.5", None)
+            quote_over = row.get("odd over 2,5", None)
+            quote_under = row.get("odd under 2,5", None)
 
             if pd.isna(quote_over) or pd.isna(quote_under) or quote_over < 1.01 or quote_under < 1.01:
                 continue
