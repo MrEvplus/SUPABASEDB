@@ -394,7 +394,7 @@ def run_pre_match(df, db_selected):
 
         if apply_team_filter:
             df_label = df_label[
-                (df_label["Home"] == selected_home_team) | (df_label["Away"] == selected_away_team)
+                (df_label["Home"] == home_team) | (df_label["Away"] == away_team)
             ]
 
         df_label = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
