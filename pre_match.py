@@ -372,6 +372,8 @@ def run_pre_match(df, db_selected):
         st.dataframe(df_comp, use_container_width=True)
 
         st.success("✅ Confronto Pre Match generato con successo!")
+        
+        
         # -------------------------------------------------------
         # ROI OVER / UNDER 2.5
         # -------------------------------------------------------
@@ -381,8 +383,15 @@ def run_pre_match(df, db_selected):
         over_quote = st.number_input("📈 Inserisci Quota Over 2.5", min_value=1.01, value=1.90, step=0.01)
         under_quote = st.number_input("📉 Inserisci Quota Under 2.5", min_value=1.01, value=1.90, step=0.01)
 
+        apply_label_filter = st.checkbox("🔍 Applica filtro solo ai match con lo stesso range di quote (label Match Odds)", value=True)
+
         commission = 0.045
-        df_label = df[df["Label"] == label] if label else df.copy()
+
+        df_label = df.copy()
+        if apply_label_filter:
+            df_label["LabelTemp"] = df_label.apply(label_match, axis=1)
+            df_label = df_label[df_label["LabelTemp"] == label]
+
         df_label = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
 
         total = 0
