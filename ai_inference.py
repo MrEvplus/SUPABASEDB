@@ -16,8 +16,8 @@ def run_ai_inference(df, db_selected):
         response = requests.post(API_URL, headers=HEADERS, json=payload)
         try:
             return response.json()[0]['generated_text']
-        except:
-            return "⚠️ Errore nella risposta del modello Hugging Face."
+        except Exception as e:
+            return f"⚠️ Errore nella risposta del modello Hugging Face: {e}"
 
     st.write(f"📊 Campionato selezionato: **{db_selected}**")
     st.write(f"📁 Righe disponibili nel database: {df.shape[0]}")
