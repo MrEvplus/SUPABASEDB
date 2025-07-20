@@ -2,19 +2,21 @@ import streamlit as st
 import pandas as pd
 import requests
 
-def ask_huggingface(question, context, model="google/flan-t5-small"):
+def ask_huggingface(question, context, model="tiiuae/falcon-7b-instruct"):
     """
     Invia una domanda + contesto al modello Hugging Face per ottenere una risposta AI.
-    Supporta contesti lunghi, fallback in caso di errore e modelli personalizzabili.
+    Usa un modello alternativo gratuito e stabile.
     """
     HF_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
     API_URL = f"https://api-inference.huggingface.co/models/{model}"
     HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
+    # Debug: mostra i primi caratteri del token
+    st.caption(f"🔐 Token Hugging Face attivo: {HF_TOKEN[:5]}...")
+
     context = context[:3000]
 
-    prompt = f"Rispondi in modo chiaro alla seguente domanda, usando il contesto disponibile.\nDomanda: {question}\nContesto: {context}"
-
+    prompt = f"Domanda: {question}\nContesto: {context}"
     payload = {"inputs": prompt}
 
     try:
@@ -37,7 +39,7 @@ def run_ai_inference(df, db_selected):
 
     st.write(f"📊 Campionato selezionato: **{db_selected}**")
     st.write(f"📁 Righe disponibili nel database: {df.shape[0]}")
-    st.dataframe(df.head(10))  # ✅ mostra le prime 10 righe per capire se tutto va
+    st.dataframe(df.head(10))  # Mostra i primi dati per conferma
 
     question = st.text_input("✍️ Inserisci la tua domanda sul campionato:")
 
