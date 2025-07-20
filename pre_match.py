@@ -438,8 +438,8 @@ def run_pre_match(df, db_selected):
 
             df_roi = pd.DataFrame([{
                 "Linea": "2.5 Goals",
-                "Quote Over": over_quote,
-                "Quote Under": under_quote,
+                "Quote Over": "dal database",
+                "Quote Under": "dal database",
                 "% Over": f"{pct_over}%",
                 "% Under": f"{pct_under}%",
                 "ROI Over": f"{roi_over}%",
