@@ -372,3 +372,56 @@ def run_pre_match(df, db_selected):
         st.dataframe(df_comp, use_container_width=True)
 
         st.success("✅ Confronto Pre Match generato con successo!")
+        # -------------------------------------------------------
+        # ROI OVER / UNDER 2.5
+        # -------------------------------------------------------
+        st.markdown("---")
+        st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
+
+        over_quote = st.number_input("📈 Inserisci Quota Over 2.5", min_value=1.01, value=1.90, step=0.01)
+        under_quote = st.number_input("📉 Inserisci Quota Under 2.5", min_value=1.01, value=1.90, step=0.01)
+
+        commission = 0.045
+        df_label = df[df["Label"] == label] if label else df.copy()
+        df_label = df_label[df_label["Home Goal FT"].notna() & df_label["Away Goal FT"].notna()]
+
+        total = 0
+        profit_over = 0
+        profit_under = 0
+        over_hits = 0
+        under_hits = 0
+
+        for _, row in df_label.iterrows():
+            goals = row["Home Goal FT"] + row["Away Goal FT"]
+            if goals > 2.5:
+                over_hits += 1
+                profit_over += (over_quote - 1) * (1 - commission)
+                profit_under -= 1
+            else:
+                under_hits += 1
+                profit_under += (under_quote - 1) * (1 - commission)
+                profit_over -= 1
+            total += 1
+
+        if total > 0:
+            roi_over = round((profit_over / total) * 100, 2)
+            roi_under = round((profit_under / total) * 100, 2)
+            pct_over = round((over_hits / total) * 100, 2)
+            pct_under = round((under_hits / total) * 100, 2)
+
+            df_roi = pd.DataFrame([{
+                "Linea": "2.5 Goals",
+                "Quote Over": over_quote,
+                "Quote Under": under_quote,
+                "% Over": f"{pct_over}%",
+                "% Under": f"{pct_under}%",
+                "ROI Over": f"{roi_over}%",
+                "ROI Under": f"{roi_under}%",
+                "Profitto Over": round(profit_over, 2),
+                "Profitto Under": round(profit_under, 2),
+                "Match Analizzati": total
+            }])
+
+            st.dataframe(df_roi, use_container_width=True)
+        else:
+            st.warning("⚠️ Nessuna partita valida trovata per il calcolo ROI Over/Under.")
