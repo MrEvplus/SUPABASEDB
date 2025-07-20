@@ -20,8 +20,7 @@ def run_correct_score_ev(df):
         df["Label"] = df.apply(label_match, axis=1)
 
     if "quota_home" not in st.session_state or "quota_away" not in st.session_state:
-        st.warning("⚠️ Devi prima inserire le quote in 'Confronto Pre Match'.")
-        return
+                return
 
     # Ricava il label da quote già salvate
     from pre_match import label_from_odds
