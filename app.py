@@ -34,7 +34,6 @@ menu_option = st.sidebar.radio(
         "Macro Stats per Campionato",
         "Statistiche per Squadre",
         "Confronto Pre Match",
-	"Correct Score EV",
 	"Domande AI",
         "Partite del Giorno",
         "Scarica Mappatura Leghe da API"
@@ -202,10 +201,6 @@ elif menu_option == "Statistiche per Squadre":
 
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
-
-elif pagina == "Correct Score EV":
-    from correct_score_ev_sezione import run_correct_score_ev
-    run_correct_score_ev(df)
 
 elif menu_option == "Domande AI":
     run_ai_inference(df, db_selected)  # ✅ aggiunto per attivare l'intelligenza artificiale
