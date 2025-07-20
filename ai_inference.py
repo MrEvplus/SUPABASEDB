@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import requests
 
-def ask_huggingface(question, context, model="bigscience/bloom-560m"):
+def ask_huggingface(question, context, model="tiiuae/falcon-rw-1b"):
     """
     Invia una domanda + contesto al modello Hugging Face.
-    Usa un modello gratuito e stabile via Inference API.
+    Usa un modello gratuito, leggero e pubblico via Inference API.
     """
     HF_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
     API_URL = f"https://api-inference.huggingface.co/models/{model}"
