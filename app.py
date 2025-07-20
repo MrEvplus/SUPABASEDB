@@ -34,7 +34,7 @@ menu_option = st.sidebar.radio(
         "Macro Stats per Campionato",
         "Statistiche per Squadre",
         "Confronto Pre Match",
-	"Domande AI"  # ✅ aggiunto,
+	"Domande AI",
         "Partite del Giorno",
         "Scarica Mappatura Leghe da API"
     ]
