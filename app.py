@@ -7,7 +7,7 @@ import base64
 from datetime import date
 from macros import run_macro_stats
 from squadre import run_team_stats
-from pre_match_with_correct_score import run_pre_match
+from pre_match import run_pre_match
 from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
