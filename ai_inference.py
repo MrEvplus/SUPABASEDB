@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 
-def ask_huggingface(question, context, model="tiiuae/falcon-7b-instruct"):
+def ask_huggingface(question, context, model="mistralai/Mistral-7B-Instruct-v0.1"):
     """
     Invia una domanda + contesto al modello Hugging Face per ottenere una risposta AI.
     Usa un modello alternativo gratuito e stabile.
