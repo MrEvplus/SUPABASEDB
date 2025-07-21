@@ -101,4 +101,4 @@ def run_correct_score_ev(df):
                 cs_counts.at[i, "Quota"] = quota_input
                 cs_counts.at[i, "EV"] = calculate_ev(cs_counts.at[i, "%"], quota_input)
 
-            st.dataframe(cs_counts.head(6), use_container_width=True)
+            st.dataframe(cs_counts.head(6), use_
