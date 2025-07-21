@@ -299,4 +299,5 @@ elif menu_option == "Partite del Giorno":
 
 elif menu_option == "Correct Score EV":
     from correct_score_ev_sezione import run_correct_score_ev
-    run_correct_score_ev(df)
+    run_correct_score_ev(df, db_selected)
+
