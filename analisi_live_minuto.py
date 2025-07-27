@@ -61,8 +61,8 @@ def run_live_minute_analysis(df):
     goal_dopo = 0
     over_stats = {1.5: 0, 2.5: 0, 3.5: 0, 4.5: 0}
     final_scores = []
-    tf_bands = [(0,15), (16,30), (31,45), (46,60), (61,75), (76,120)]
-    tf_labels = [f"{a}-{b}" for a,b in tf_bands]
+    tf_bands = [(0,15), (16,30), (31,45), (46,60), (61,75), (76,90)]
+    tf_labels = [f"{a}-{b}" for a,b in tf_bands[:-1]] + ["76-90+"]
     tf_counts = {k:0 for k in tf_labels}
 
     for _, row in df_matched.iterrows():
@@ -74,9 +74,9 @@ def run_live_minute_analysis(df):
             goal_dopo += 1
 
         for m in home_goals + away_goals:
-            for a,b in tf_bands:
+            for i, (a, b) in enumerate(tf_bands):
                 if a < m <= b:
-                    tf_counts[f"{a}-{b}"] += 1
+                    tf_counts[tf_labels[i]] += 1
                     break
 
         total_goals = row["Home Goal FT"] + row["Away Goal FT"]
@@ -99,10 +99,23 @@ def run_live_minute_analysis(df):
 
     st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
     tf_df = pd.DataFrame(list(tf_counts.items()), columns=["Time Frame", "Goal Segnati"])
+    tf_df["%"] = round((tf_df["Goal Segnati"] / tf_df["Goal Segnati"].sum()) * 100, 2)
     st.dataframe(tf_df)
 
+    # 📊 Grafico a barre con percentuali
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(10, 4))
+    bars = ax.bar(tf_df["Time Frame"], tf_df["Goal Segnati"], color='skyblue')
+    for i, val in enumerate(tf_df["%"]):
+        ax.text(i, tf_df["Goal Segnati"][i] + 0.3, f"{val}%", ha='center', fontsize=9, fontweight='bold')
 
-    # 👇 Mostra le partite trovate con quel punteggio live al minuto selezionato
+    ax.set_title("Distribuzione Goal per Time Frame", fontsize=13)
+    ax.set_ylabel("Goal Segnati")
+    ax.set_ylim(0, tf_df["Goal Segnati"].max() + 2)
+    ax.grid(axis='y', linestyle='--', alpha=0.5)
+    st.pyplot(fig)
+
+    # 👇 Partite della squadra selezionata
     st.markdown("### 📋 Partite storiche con stesso scenario")
     squadra_target = squadra_casa if label.startswith("H_") else squadra_ospite
     df_squadra = df_matched[
@@ -110,3 +123,4 @@ def run_live_minute_analysis(df):
     ][["Stagione", "Home", "Away", "Home Goal FT", "Away Goal FT", "Label"]]
     df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
     st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
+
