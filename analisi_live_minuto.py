@@ -38,6 +38,18 @@ def run_live_minute_analysis(df):
     df["Label"] = df.apply(label_match, axis=1)
     df_filtered = df[(df["Label"] == label) & (df["country"] == db_selected)].copy()
 
+    # 🔍 Filtro partite dove la squadra è nel ruolo corretto (Home o Away in base al label)
+    if label.startswith("H_") or label.startswith("SuperCompetitive H"):
+        squadra_scelta = squadra_casa
+        filtered_squadre = df_filtered[df_filtered["Home"] == squadra_scelta].copy()
+    elif label.startswith("A_") or label.startswith("SuperCompetitive A"):
+        squadra_scelta = squadra_ospite
+        filtered_squadre = df_filtered[df_filtered["Away"] == squadra_scelta].copy()
+    else:
+        squadra_scelta = squadra_casa
+        filtered_squadre = df_filtered[(df_filtered["Home"] == squadra_scelta) | (df_filtered["Away"] == squadra_scelta)].copy()
+
+
     if df_filtered.empty:
         st.warning("⚠️ Nessuna partita trovata con questo Label e campionato.")
         return
@@ -158,7 +170,8 @@ def run_live_minute_analysis(df):
     # 👇 Partite della squadra selezionata
     st.markdown("### 📋 Partite storiche con stesso scenario")
     squadra_target = squadra_casa if label.startswith("H_") else squadra_ospite
-        df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
+    df_squadra = filtered_squadre.copy()  # usa solo partite dove la squadra è nel ruolo corretto
+    df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
     st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
 
     # 🔍 Statistiche solo sulle partite della squadra selezionata
