@@ -156,7 +156,7 @@ def run_live_minute_analysis(df):
 
     with col2:
         fig_sq, ax_sq = plt.subplots(figsize=(6, 4))
-        ax_sq.bar(tf_df_sq["Time Frame"], tf_df_sq["Goal Totali"], color="orange")
+        ax_sq.bar(tf_df_sq["Time Frame"], tf_df_sq["Goal Totali"], color="orange") if "tf_df_sq" in locals() else ax_sq.text(0.5, 0.5, "Dati non disponibili", ha="center")
         ax_sq.set_title("Distribuzione Goal Squadra per Time Frame")
         st.pyplot(fig_sq)
     x = tf_df["Time Frame"]
