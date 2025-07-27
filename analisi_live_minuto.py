@@ -120,7 +120,7 @@ def run_live_minute_analysis(df):
     squadra_target = squadra_casa if label.startswith("H_") else squadra_ospite
     df_squadra = df_matched[
         (df_matched["Home"] == squadra_target) | (df_matched["Away"] == squadra_target)
-    ][["Stagione", "Home", "Away", "Home Goal FT", "Away Goal FT", "Label"]]
+    ].copy()
     df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
     st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
 
@@ -181,5 +181,3 @@ def run_live_minute_analysis(df):
     ax_sq.set_ylim(0, tf_df_sq["Goal Segnati"].max() + 2)
     ax_sq.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig_sq)
-
-
