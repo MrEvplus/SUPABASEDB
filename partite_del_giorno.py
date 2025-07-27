@@ -26,7 +26,6 @@ def run_partite_del_giorno(df, db_selected):
             if filename.endswith(('.xls', '.xlsx')):
                 df_today = pd.read_excel(uploaded_file)
             else:
-                # Proviamo a interpretare il CSV
                 uploaded_file.seek(0)
                 try:
                     df_today = pd.read_csv(uploaded_file)
@@ -34,19 +33,18 @@ def run_partite_del_giorno(df, db_selected):
                     uploaded_file.seek(0)
                     df_today = pd.read_csv(uploaded_file, sep=';', engine='python')
         except UnicodeDecodeError:
-            # encoding differente
             uploaded_file.seek(0)
             df_today = pd.read_csv(uploaded_file, sep=';', encoding='latin1', engine='python')
         except Exception as e:
             st.error(f"Errore nel caricamento del file: {e}")
             st.stop()
 
-        # Mapping colonne nome squadre se presenti
+        # Mapping colonne nome squadre
         if "txtechipa1" in df_today.columns and "txtechipa2" in df_today.columns:
             df_today["Home"] = df_today["txtechipa1"]
             df_today["Away"] = df_today["txtechipa2"]
 
-        # Se mancano ancora Home/Away, tentiamo con codechipa1/codechipa2
+        # Fallback colonne codechipa
         if "Home" not in df_today.columns or "Away" not in df_today.columns:
             if "codechipa1" in df_today.columns and "codechipa2" in df_today.columns:
                 df_today["Home"] = df_today["codechipa1"]
@@ -56,29 +54,32 @@ def run_partite_del_giorno(df, db_selected):
                 st.stop()
 
         # Creiamo la lista delle partite
-        df_today["match_str"] = df_today.apply(
-            lambda r: f"{r['Home']} vs {r['Away']}",
-            axis=1
-        )
+        df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
         matches = df_today["match_str"].tolist()
 
         # Seleziona la partita
-        selected = st.selectbox(
-            "Seleziona la partita:",
-            options=matches,
-            key="selected_match"
-        )
+        selected = st.selectbox("Seleziona la partita:", options=matches, key="selected_match")
 
         if selected:
             casa, ospite = selected.split(" vs ")
             st.session_state["squadra_casa"] = casa
             st.session_state["squadra_ospite"] = ospite
 
-            st.markdown(f"### Statistiche per {casa} vs {ospite}")
-            run_macro_stats(df, db_selected)
-            run_team_stats(df, db_selected)
-            run_pre_match(df, db_selected)
-            run_correct_score_ev(df, db_selected)
+            # Determina il campionato dalla riga selezionata, se disponibile
+            # Usa colonne 'league' o 'country' come db_selected
+            if 'league' in df_today.columns:
+                match_db = df_today.loc[df_today['match_str']==selected, 'league'].iloc[0]
+            elif 'country' in df_today.columns:
+                match_db = df_today.loc[df_today['match_str']==selected, 'country'].iloc[0]
+            else:
+                match_db = db_selected
+
+            # Mostriamo le statistiche filtrate sul campionato della partita
+            st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
+            run_macro_stats(df, match_db)
+            run_team_stats(df, match_db)
+            run_pre_match(df, match_db)
+            run_correct_score_ev(df, match_db)
 
             # Pulsante per tornare indietro
             if st.button("🔙 Torna indietro"):
