@@ -123,9 +123,9 @@ def run_live_minute_analysis(df):
     # 📊 Grafico a barre con percentuali
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(10, 4))
-    bars = ax.bar(tf_df["Time Frame"], tf_df["Goal Segnati"], color='skyblue')
+    bars = ax.bar(tf_df["Time Frame"], tf_df["Goal Totali"], color='skyblue')
     for i, val in enumerate(tf_df["%"]):
-        ax.text(i, tf_df["Goal Segnati"][i] + 0.3, f"{val}%", ha='center', fontsize=9, fontweight='bold')
+        ax.text(i, tf_df["Goal Totali"][i] + 0.3, f"{val}%", ha='center', fontsize=9, fontweight='bold')
 
     ax.set_title("Distribuzione Goal per Time Frame", fontsize=13)
     ax.set_ylabel("Goal Segnati")
@@ -219,9 +219,9 @@ def run_live_minute_analysis(df):
     # 📊 Grafico a barre anche per la squadra selezionata
     import matplotlib.pyplot as plt
     fig_sq, ax_sq = plt.subplots(figsize=(10, 4))
-    bars_sq = ax_sq.bar(tf_df_sq["Time Frame"], tf_df_sq["Goal Segnati"], color='salmon')
+    bars_sq = ax_sq.bar(tf_df_sq["Time Frame"], tf_df_sq["Goal Totali"], color='salmon')
     for i, val in enumerate(tf_df_sq["%"]):
-        ax_sq.text(i, tf_df_sq["Goal Segnati"][i] + 0.3, f"{val}%", ha='center', fontsize=9, fontweight='bold')
+        ax_sq.text(i, tf_df_sq["Goal Totali"][i] + 0.3, f"{val}%", ha='center', fontsize=9, fontweight='bold')
 
     ax_sq.set_title("Distribuzione Goal per Time Frame - Squadra", fontsize=13)
     ax_sq.set_ylabel("Goal Segnati")
