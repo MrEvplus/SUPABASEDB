@@ -156,16 +156,17 @@ def run_live_minute_analysis(df):
     # Tabella risultati squadra
     fr2 = (dft
            .groupby(["Home Goal FT","Away Goal FT"])
-           .size().reset_index(name="Count"))
+           .size().reset_index(name="Occorrenze"))
     fr2["Risultato"] = fr2["Home Goal FT"].astype(str) + "-" + fr2["Away Goal FT"].astype(str)
-    fr2 = fr2.sort_values("Count", ascending=False)
-    tot2 = fr2["Count"].sum()
-    fr2["%"] = (fr2["Count"]/tot2*100).round(2)
+    fr2 = fr2.sort_values("Occorrenze", ascending=False)
+    tot2 = fr2["Occorrenze"].sum()
+    fr2["%"] = (fr2["Occorrenze"]/tot2*100).round(2)
     st.markdown(f"### 🧾 Risultati Finali più frequenti ({team})")
     st.dataframe(
-        fr2[["Risultato","Count","%"]]
-        .rename(columns={"Count":"Occorrenze"})
-        .style.format({"%":"{:.2f}%"}),
+        fr2[["Risultato","Occorrenze","%"]]
+        .style
+          .set_properties(**{"background-color":"white","color":"#333","border":"1px solid #ddd"})
+          .format({"%":"{:.2f}%"}),
         height=250
     )
 
@@ -186,23 +187,37 @@ def run_live_minute_analysis(df):
                     if a< m <= b:
                         df_tf2.at[lbl,"Subiti"] +=1; break
     df_tf2["% Totale"] = ((df_tf2.sum(axis=1)/df_tf2.sum(axis=1).sum())*100).round(2)
-    st.dataframe(df_tf2.reset_index().rename(columns={"index":"Intervallo"}),
-                 height=250,
-                 use_container_width=True,
-                 )
+    st.dataframe(
+        df_tf2.reset_index().rename(columns={"index":"Intervallo"}),
+        height=250,
+        use_container_width=True
+    )
 
+    # Grafici affiancati (squadra)
     colC, colD = st.columns(2)
     with colC:
         fig3, ax3 = plt.subplots(figsize=(5,3))
-        df_tf2[["Fatti","Subiti"]].plot.bar(ax=ax3)
+        fig3.patch.set_facecolor("white")
+        ax3.set_facecolor("white")
+        df_tf2[["Fatti","Subiti"]].plot.bar(ax=ax3, color=["#1f77b4","#ff7f0e"])
+        for i,(f,s) in enumerate(zip(df_tf2["Fatti"],df_tf2["Subiti"])):
+            ax3.text(i, f/2, str(f), ha="center", va="center", color="white", fontweight="bold")
+            ax3.text(i, f+s/2, str(s), ha="center", va="center", color="white", fontweight="bold")
         ax3.set_xticklabels(labels, rotation=45, ha="right")
-        ax3.set_title(f"Goal Fatti/Subiti per Intervallo ({team})")
+        ax3.set_title(f"Goal Fatti vs Subiti per Intervallo ({team})", pad=15)
+        ax3.set_ylabel("Numero di goal")
+        ax3.grid(axis="y", linestyle="--", alpha=0.3)
         st.pyplot(fig3)
+
     with colD:
         fig4, ax4 = plt.subplots(figsize=(5,3))
-        bars4 = ax4.bar(labels, df_tf2["% Totale"], color="coral")
-        ax4.set_xticklabels(labels, rotation=45, ha="right")
-        ax4.set_title(f"% Goal per Intervallo ({team})")
+        fig4.patch.set_facecolor("white")
+        ax4.set_facecolor("white")
+        bars4 = ax4.bar(labels, df_tf2["% Totale"], color="#2ca02c")
         for i,v in enumerate(df_tf2["% Totale"]):
             ax4.text(i, v+0.5, f"{v}%", ha="center", va="bottom", fontweight="bold")
+        ax4.set_xticklabels(labels, rotation=45, ha="right")
+        ax4.set_title(f"% Goal per Intervallo ({team})", pad=15)
+        ax4.set_ylabel("% del totale")
+        ax4.grid(axis="y", linestyle="--", alpha=0.3)
         st.pyplot(fig4)
