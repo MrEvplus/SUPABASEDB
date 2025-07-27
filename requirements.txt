@@ -8,5 +8,6 @@ supabase
 duckdb
 requests  # per chiamate API HuggingFace
 matplotlib
-streamlit-aggrid
+xlrd>=2.0.1
+
 
