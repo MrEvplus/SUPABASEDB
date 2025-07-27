@@ -158,8 +158,7 @@ def run_live_minute_analysis(df):
     # 👇 Partite della squadra selezionata
     st.markdown("### 📋 Partite storiche con stesso scenario")
     squadra_target = squadra_casa if label.startswith("H_") else squadra_ospite
-    df_squadra = filtered_squadre.copy()  # usa solo partite dove la squadra è nel ruolo corretto
-    df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
+        df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
     st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
 
     # 🔍 Statistiche solo sulle partite della squadra selezionata
