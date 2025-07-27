@@ -1,5 +1,6 @@
 
 
+
 import streamlit as st
 import pandas as pd
 from utils import label_match, extract_minutes
@@ -146,7 +147,7 @@ def run_live_minute_analysis(df):
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig)
 
-    
+
 # ✅ Crea tf_df_sq PRIMA dei grafici per evitare UnboundLocalError
 if not filtered_squadre.empty:
     tf_df_sq = pd.DataFrame({
@@ -297,8 +298,8 @@ col1, col2 = st.columns(2)
 
     # ✅ Statistiche Squadra Selezionata post-minuto e score live
     st.subheader("📊 Statistiche Partite Squadra Selezionata (post-minuto selezionato)")
-    df_post = df_squadra[(df_squadra["Minuto"] == minuto) & 
-                        (df_squadra["Home Goal Live"] == goal_home_live) & 
+    df_post = df_squadra[(df_squadra["Minuto"] == minuto) &
+                        (df_squadra["Home Goal Live"] == goal_home_live) &
                         (df_squadra["Away Goal Live"] == goal_away_live)]
 
     if df_post.empty:
