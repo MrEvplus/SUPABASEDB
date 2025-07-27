@@ -66,13 +66,16 @@ def run_live_minute_analysis(df):
             st.markdown(f"• **OVER {thr}:** {pct}%")
 
     # --- Frequenza risultati finali (campionato) ---
-    freq = (df_matched["Home Goal FT"].astype(int).astype(str) + "-" +
-            df_matched["Away Goal FT"].astype(int).astype(str))
+    freq = (
+        df_matched["Home Goal FT"].astype(int).astype(str)
+        + "-"
+        + df_matched["Away Goal FT"].astype(int).astype(str)
+    )
     freq_df = freq.value_counts().reset_index()
     freq_df.columns = ["Risultato", "Occorrenze"]
     freq_df["%"] = (freq_df["Occorrenze"] / len(df_matched) * 100).round(2)
     st.subheader("📋 Risultati finali più frequenti (Campionato)")
-    st.dataframe(freq_df.style.format({"%":"{:.2f}%"}))
+    st.dataframe(freq_df.style.format({"%": "{:.2f}%"}))
 
     # --- Distribuzione goal per intervallo (campionato) ---
     st.subheader("⏱️ Distribuzione Goal per Intervallo (Campionato)")
@@ -80,28 +83,26 @@ def run_live_minute_analysis(df):
     tf_labels = [f"{a}-{b}" for a,b in tf_bands]
     data = []
     for lbl,(a,b) in zip(tf_labels, tf_bands):
-        cnt_h = sum(a < m <= b for row in df_matched
-                    for m in extract_minutes(pd.Series([row.get("minuti goal segnato home","")])))
-        cnt_a = sum(a < m <= b for row in df_matched
-                    for m in extract_minutes(pd.Series([row.get("minuti goal segnato away","")])))
+        cnt_h = 0
+        cnt_a = 0
+        for _, row in df_matched.iterrows():
+            cnt_h += sum(a < m <= b for m in extract_minutes(pd.Series([row.get("minuti goal segnato home","")])))
+            cnt_a += sum(a < m <= b for m in extract_minutes(pd.Series([row.get("minuti goal segnato away","")])))
         data.append((lbl, cnt_h, cnt_a))
     tf_df = pd.DataFrame(data, columns=["Intervallo","Fatti","Subiti"])
     tf_df["Totale"] = tf_df["Fatti"] + tf_df["Subiti"]
     tf_df["% Totale"] = (tf_df["Totale"] / tf_df["Totale"].sum() * 100).round(2)
-    st.dataframe(tf_df.style.format({"% Totale":"{:.2f}%"}))
+    st.dataframe(tf_df.style.format({"% Totale": "{:.2f}%"}))
 
     # --- Grafico goal fatti/subiti per intervallo (campionato) ---
     fig, ax = plt.subplots(figsize=(8,4))
     fig.patch.set_facecolor("white"); ax.set_facecolor("white")
-    ax.bar(tf_df["Intervallo"], tf_df["Fatti"],
-           label="Fatti", color="#1f77b4", alpha=0.8)
-    ax.bar(tf_df["Intervallo"], tf_df["Subiti"],
-           bottom=tf_df["Fatti"], label="Subiti",
-           color="#ff7f0e", alpha=0.8)
+    ax.bar(tf_df["Intervallo"], tf_df["Fatti"], label="Fatti", color="#1f77b4", alpha=0.8)
+    ax.bar(tf_df["Intervallo"], tf_df["Subiti"], bottom=tf_df["Fatti"],
+           label="Subiti", color="#ff7f0e", alpha=0.8)
     for i,(tot,pct) in enumerate(zip(tf_df["Totale"], tf_df["% Totale"])):
         ax.text(i, tot+0.3, f"{tot} ({pct}%)",
-                ha="center", va="bottom",
-                color="black", fontweight="bold")
+                ha="center", va="bottom", color="black", fontweight="bold")
     ax.set_title("Goal Fatti/Subiti per Intervallo (Campionato)")
     ax.set_ylabel("Numero di goal")
     ax.legend(); ax.grid(axis="y", linestyle="--", alpha=0.3)
@@ -111,45 +112,47 @@ def run_live_minute_analysis(df):
 
     # --- Stesse statistiche ma su squadra selezionata ---
     team = home_team if label.startswith("H_") else away_team
-    df_team = df_matched[(df_matched["Home"]==home_team)|(df_matched["Away"]==away_team)]
+    df_team = df_matched[
+        (df_matched["Home"] == home_team) | (df_matched["Away"] == away_team)
+    ]
 
     st.subheader(f"📊 Probabilità OVER (dal minuto live) - {team}")
     extra_t = df_team["Home Goal FT"] + df_team["Away Goal FT"] - (live_h + live_a)
     for thr in thresholds:
-        pct_t = round((extra_t > thr).mean()*100,2)
+        pct_t = round((extra_t > thr).mean() * 100, 2)
         st.markdown(f"• **OVER {thr}:** {pct_t}%")
 
-    freq_t = freq[df_matched.index.isin(df_team.index)]
+    freq_t = freq[freq.index.isin(df_team.index)]
     freq_df_t = freq_t.value_counts().reset_index()
     freq_df_t.columns = ["Risultato","Occorrenze"]
     freq_df_t["%"] = (freq_df_t["Occorrenze"] / len(df_team) * 100).round(2)
     st.subheader(f"📋 Risultati finali più frequenti - {team}")
-    st.dataframe(freq_df_t.style.format({"%":"{:.2f}%"}))
+    st.dataframe(freq_df_t.style.format({"%": "{:.2f}%"}))
 
     st.subheader(f"⏱️ Distribuzione Goal per Intervallo - {team}")
     data_t = []
     for lbl,(a,b) in zip(tf_labels, tf_bands):
-        cnt_ht = sum(a < m <= b for row in df_team
-                     for m in extract_minutes(pd.Series([row.get("minuti goal segnato home","")])))
-        cnt_at = sum(a < m <= b for row in df_team
-                     for m in extract_minutes(pd.Series([row.get("minuti goal segnato away","")])))
+        cnt_ht = 0
+        cnt_at = 0
+        for _, row in df_team.iterrows():
+            cnt_ht += sum(a < m <= b for m in extract_minutes(pd.Series([row.get("minuti goal segnato home","")])))
+            cnt_at += sum(a < m <= b for m in extract_minutes(pd.Series([row.get("minuti goal segnato away","")])))
         data_t.append((lbl, cnt_ht, cnt_at))
     tf_df_t = pd.DataFrame(data_t, columns=["Intervallo","Fatti","Subiti"])
     tf_df_t["Totale"] = tf_df_t["Fatti"] + tf_df_t["Subiti"]
     tf_df_t["% Totale"] = (tf_df_t["Totale"] / tf_df_t["Totale"].sum() * 100).round(2)
-    st.dataframe(tf_df_t.style.format({"% Totale":"{:.2f}%"}))
+    st.dataframe(tf_df_t.style.format({"% Totale": "{:.2f}%"}))
 
     fig2, ax2 = plt.subplots(figsize=(8,4))
     fig2.patch.set_facecolor("white"); ax2.set_facecolor("white")
-    ax2.bar(tf_df_t["Intervallo"], tf_df_t["Fatti"],
-            label="Fatti", color="#1f77b4", alpha=0.8)
+    ax2.bar(tf_df_t["Intervallo"], tf_df_t["Fatti"], label="Fatti",
+            color="#1f77b4", alpha=0.8)
     ax2.bar(tf_df_t["Intervallo"], tf_df_t["Subiti"],
             bottom=tf_df_t["Fatti"], label="Subiti",
             color="#ff7f0e", alpha=0.8)
     for i,(tot,pct) in enumerate(zip(tf_df_t["Totale"], tf_df_t["% Totale"])):
         ax2.text(i, tot+0.3, f"{tot} ({pct}%)",
-                 ha="center", va="bottom",
-                 color="black", fontweight="bold")
+                 ha="center", va="bottom", color="black", fontweight="bold")
     ax2.set_title(f"Goal Fatti/Subiti per Intervallo ({team})")
     ax2.set_ylabel("Numero di goal")
     ax2.legend(); ax2.grid(axis="y", linestyle="--", alpha=0.3)
