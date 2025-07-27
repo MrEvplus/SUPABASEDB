@@ -4,220 +4,153 @@ import matplotlib.pyplot as plt
 from utils import label_match, extract_minutes
 
 def run_live_minute_analysis(df):
-    st.title("⏱️ Analisi Live dal Minuto Selezionato")
-    # -----------------------------
-    # Input utente
-    # -----------------------------
-    home = st.selectbox("🏠 Squadra in casa", sorted(df["Home"].dropna().unique()), key="home_live")
-    away = st.selectbox("🚪 Squadra fuori casa", sorted(df["Away"].dropna().unique()), key="away_live")
+    st.set_page_config(page_title="Analisi Live Minuto", layout="wide")
+    st.title("⏱️ Analisi Live - Cosa succede da questo minuto in poi?")
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        odd_h = st.number_input("Quota Home", 1.01, 10.0, 2.00)
-    with c2:
-        odd_d = st.number_input("Quota Draw", 1.01, 10.0, 3.20)
-    with c3:
-        odd_a = st.number_input("Quota Away", 1.01, 10.0, 3.80)
+    # --- Selezione squadre ---
+    col1, col2 = st.columns(2)
+    with col1:
+        home_team = st.selectbox("🏠 Squadra in casa", sorted(df["Home"].dropna().unique()), key="home_live")
+    with col2:
+        away_team = st.selectbox("🚪 Squadra in trasferta", sorted(df["Away"].dropna().unique()), key="away_live")
 
-    minute = st.slider("⏱️ Minuto attuale", 1, 120, 60)
-    live_score = st.text_input("📟 Risultato live (es. 1-1)", "1-1")
+    # --- Inserimento quote ---
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        odd_home = st.number_input("📈 Quota Home", min_value=1.01, step=0.01, value=2.00)
+    with col2:
+        odd_draw = st.number_input("⚖️ Quota Pareggio", min_value=1.01, step=0.01, value=3.20)
+    with col3:
+        odd_away = st.number_input("📉 Quota Away", min_value=1.01, step=0.01, value=3.80)
+
+    # --- Minuto e risultato live ---
+    current_min = st.slider("⏲️ Minuto attuale", 1, 120, 45, key="current_min")
+    live_score = st.text_input("📟 Risultato live (es. 1-1)", "1-1", key="live_score")
     try:
-        gh_live, ga_live = map(int, live_score.split("-"))
+        live_h, live_a = map(int, live_score.split("-"))
     except:
-        st.error("⚠️ Formato risultato non valido!")
+        st.error("⚠️ Formato risultato non valido. Usa ad esempio `1-1`.")
         return
 
-    label = label_match({"Odd home": odd_h, "Odd Away": odd_a})
-    st.markdown(f"🔖 **Label individuato:** `{label}`")
-    league = st.session_state.get("campionato_corrente")
-    if not league:
-        st.warning("Seleziona un campionato prima")
-        return
+    label = label_match({"Odd home": odd_home, "Odd Away": odd_away})
+    st.markdown(f"🔖 **Label identificato:** `{label}`")
 
+    # --- Filtra per campionato e label ---
+    champ = st.session_state.get("campionato_corrente", df["country"].iloc[0])
     df["Label"] = df.apply(label_match, axis=1)
-    df0 = df[(df["Label"]==label) & (df["country"]==league)].copy()
-    if df0.empty:
-        st.warning("Nessuna partita storica trovata per questo scenario.")
+    df_league = df[(df["country"] == champ) & (df["Label"] == label)]
+    if df_league.empty:
+        st.warning("⚠️ Nessuna partita per questo Label nel campionato selezionato.")
         return
 
-    # -----------------------------
-    # Filtra match con lo stesso live score
-    # -----------------------------
-    matches = []
-    for _, row in df0.iterrows():
-        hg = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
-        ag = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-        if sum(m<=minute for m in hg)==gh_live and sum(m<=minute for m in ag)==ga_live:
-            matches.append(row)
-    if not matches:
-        st.warning("Nessun storico con quel punteggio/minuto.")
-        return
+    # --- Match storici con lo stesso punteggio al minuto scelto ---
+    matched = []
+    for _, row in df_league.iterrows():
+        mh = extract_minutes(pd.Series([row.get("minuti goal segnato home","")]))
+        ma = extract_minutes(pd.Series([row.get("minuti goal segnato away","")]))
+        gh = sum(1 for m in mh if m <= current_min)
+        ga = sum(1 for m in ma if m <= current_min)
+        if gh == live_h and ga == live_a:
+            matched.append(row)
+    df_matched = pd.DataFrame(matched)
+    st.success(f"✅ Trovate {len(df_matched)} partite con punteggio {live_h}-{live_a} al minuto {current_min}")
 
-    dfm = pd.DataFrame(matches)
-    st.success(f"Trovati **{len(dfm)}** match con `{gh_live}-{ga_live}` al **{minute}'**")
-
-    # soglie di OVER
+    # --- Calcolo OVER aggiuntivi (campionato) ---
+    st.subheader("📊 Probabilità OVER (dal minuto live) - Campionato")
+    extra_goals = df_matched["Home Goal FT"] + df_matched["Away Goal FT"] - (live_h + live_a)
     thresholds = [0.5, 1.5, 2.5, 3.5, 4.5]
-    st.markdown("### 📈 % OVER dal minuto selezionato (Campionato)")
-    for t in thresholds:
-        cnt = ((dfm["Home Goal FT"]+dfm["Away Goal FT"]) - (gh_live+ga_live) > t).sum()
-        pct = round(cnt/len(dfm)*100,2)
-        st.write(f"- OVER {t}: **{pct}%**")
+    cols_stat = st.columns(2)
+    for i, thr in enumerate(thresholds):
+        pct = round((extra_goals > thr).mean() * 100, 2)
+        with cols_stat[i % 2]:
+            st.markdown(f"• **OVER {thr}:** {pct}%")
 
-    # -----------------------------
-    # Tabella "Risultati Finali più frequenti" (Campionato)
-    # -----------------------------
-    freq = (dfm
-            .groupby(["Home Goal FT","Away Goal FT"])
-            .size()
-            .reset_index(name="Count"))
-    freq["Risultato"] = freq["Home Goal FT"].astype(str) + "-" + freq["Away Goal FT"].astype(str)
-    freq = freq.sort_values("Count", ascending=False)
-    total = freq["Count"].sum()
-    freq["%"] = (freq["Count"]/total*100).round(2)
-    st.markdown("### 🧾 Risultati Finali più frequenti (Campionato)")
-    st.dataframe(
-        freq[["Risultato","Count","%"]]
-        .rename(columns={"Count":"Occorrenze"})
-        .style.format({"%":"{:.2f}%"}),
-        height=250
-    )
+    # --- Frequenza risultati finali (campionato) ---
+    freq = (df_matched["Home Goal FT"].astype(int).astype(str) + "-" +
+            df_matched["Away Goal FT"].astype(int).astype(str))
+    freq_df = freq.value_counts().reset_index()
+    freq_df.columns = ["Risultato", "Occorrenze"]
+    freq_df["%"] = (freq_df["Occorrenze"] / len(df_matched) * 100).round(2)
+    st.subheader("📋 Risultati finali più frequenti (Campionato)")
+    st.dataframe(freq_df.style.format({"%":"{:.2f}%"}))
 
-    # -----------------------------
-    # Distribuzione goal per Time Frame (Campionato)
-    # -----------------------------
-    st.markdown("### ⏱️ Distribuzione Goal per Intervallo di Minuti (Campionato)")
-    bands = [(0,15),(16,30),(31,45),(46,60),(61,75),(76,90)]
-    labels = [f"{a}-{b}" for a,b in bands]
-    df_tf = pd.DataFrame(0, index=labels, columns=["Fatti","Subiti"])
-    for _, row in dfm.iterrows():
-        hg = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
-        ag = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-        for m in hg:
-            if m>minute:
-                for (a,b),lbl in zip(bands,labels):
-                    if a< m <= b:
-                        df_tf.at[lbl,"Fatti"] +=1
-                        break
-        for m in ag:
-            if m>minute:
-                for (a,b),lbl in zip(bands,labels):
-                    if a< m <= b:
-                        df_tf.at[lbl,"Subiti"] +=1
-                        break
-    df_tf["% Totale"] = ( (df_tf.sum(axis=1) / df_tf.sum(axis=1).sum())*100 ).round(2)
-    st.dataframe(df_tf.reset_index().rename(columns={"index":"Intervallo"}),
-                 height=250,
-                 use_container_width=True,
-                 )
+    # --- Distribuzione goal per intervallo (campionato) ---
+    st.subheader("⏱️ Distribuzione Goal per Intervallo (Campionato)")
+    tf_bands = [(0,15),(16,30),(31,45),(46,60),(61,75),(76,90)]
+    tf_labels = [f"{a}-{b}" for a,b in tf_bands]
+    data = []
+    for lbl,(a,b) in zip(tf_labels, tf_bands):
+        cnt_h = sum(a < m <= b for row in df_matched
+                    for m in extract_minutes(pd.Series([row.get("minuti goal segnato home","")])))
+        cnt_a = sum(a < m <= b for row in df_matched
+                    for m in extract_minutes(pd.Series([row.get("minuti goal segnato away","")])))
+        data.append((lbl, cnt_h, cnt_a))
+    tf_df = pd.DataFrame(data, columns=["Intervallo","Fatti","Subiti"])
+    tf_df["Totale"] = tf_df["Fatti"] + tf_df["Subiti"]
+    tf_df["% Totale"] = (tf_df["Totale"] / tf_df["Totale"].sum() * 100).round(2)
+    st.dataframe(tf_df.style.format({"% Totale":"{:.2f}%"}))
 
-    # -----------------------------
-    # Grafici affiancati (Campionato)
-    # -----------------------------
-    colA, colB = st.columns(2)
-    with colA:
-        fig, ax = plt.subplots(figsize=(5,3))
-        df_tf[["Fatti","Subiti"]].plot.bar(ax=ax)
-        for i,(f,s) in enumerate(zip(df_tf["Fatti"],df_tf["Subiti"])):
-            ax.text(i, f/2, str(f), ha="center", va="center", color="white", fontweight="bold")
-            ax.text(i, f+s/2, str(s), ha="center", va="center", color="white", fontweight="bold")
-        ax.set_xticklabels(labels, rotation=45, ha="right")
-        ax.set_title("Goal Fatti vs Subiti per Intervallo (Campionato)")
-        ax.set_ylabel("Numero di goal")
-        st.pyplot(fig)
-    with colB:
-        fig2, ax2 = plt.subplots(figsize=(5,3))
-        bars = ax2.bar(labels, df_tf["% Totale"], color="teal")
-        for i,val in enumerate(df_tf["% Totale"]):
-            ax2.text(i, val+0.5, f"{val}%", ha="center", va="bottom", fontweight="bold")
-        ax2.set_xticklabels(labels, rotation=45, ha="right")
-        ax2.set_title("% Goal totali per Intervallo (Campionato)")
-        ax2.set_ylabel("% del totale")
-        st.pyplot(fig2)
+    # --- Grafico goal fatti/subiti per intervallo (campionato) ---
+    fig, ax = plt.subplots(figsize=(8,4))
+    fig.patch.set_facecolor("white"); ax.set_facecolor("white")
+    ax.bar(tf_df["Intervallo"], tf_df["Fatti"],
+           label="Fatti", color="#1f77b4", alpha=0.8)
+    ax.bar(tf_df["Intervallo"], tf_df["Subiti"],
+           bottom=tf_df["Fatti"], label="Subiti",
+           color="#ff7f0e", alpha=0.8)
+    for i,(tot,pct) in enumerate(zip(tf_df["Totale"], tf_df["% Totale"])):
+        ax.text(i, tot+0.3, f"{tot} ({pct}%)",
+                ha="center", va="bottom",
+                color="black", fontweight="bold")
+    ax.set_title("Goal Fatti/Subiti per Intervallo (Campionato)")
+    ax.set_ylabel("Numero di goal")
+    ax.legend(); ax.grid(axis="y", linestyle="--", alpha=0.3)
+    st.pyplot(fig)
 
-    # =============================================================================
-    # Ripeti ora per la squadra specifica
-    # =============================================================================
     st.markdown("---")
-    team = home if label.startswith("H_") else away
-    st.header(f"⚽ Dettaglio per squadra: {team}")
-    dft = dfm[(dfm["Home"]==team)|(dfm["Away"]==team)].copy()
-    if dft.empty:
-        st.info("Nessun match per questa squadra nello scenario.")
-        return
 
-    # OVER per squadra
-    st.markdown(f"### 📈 % OVER dal {minute}' per {team}")
-    for t in thresholds:
-        cnt = ((dft["Home Goal FT"]+dft["Away Goal FT"]) - (gh_live+ga_live) > t).sum()
-        pct = round(cnt/len(dft)*100,2)
-        st.write(f"- OVER {t}: **{pct}%**")
+    # --- Stesse statistiche ma su squadra selezionata ---
+    team = home_team if label.startswith("H_") else away_team
+    df_team = df_matched[(df_matched["Home"]==home_team)|(df_matched["Away"]==away_team)]
 
-    # Tabella risultati squadra
-    fr2 = (dft
-           .groupby(["Home Goal FT","Away Goal FT"])
-           .size().reset_index(name="Occorrenze"))
-    fr2["Risultato"] = fr2["Home Goal FT"].astype(str) + "-" + fr2["Away Goal FT"].astype(str)
-    fr2 = fr2.sort_values("Occorrenze", ascending=False)
-    tot2 = fr2["Occorrenze"].sum()
-    fr2["%"] = (fr2["Occorrenze"]/tot2*100).round(2)
-    st.markdown(f"### 🧾 Risultati Finali più frequenti ({team})")
-    st.dataframe(
-        fr2[["Risultato","Occorrenze","%"]]
-        .style
-          .set_properties(**{"background-color":"white","color":"#333","border":"1px solid #ddd"})
-          .format({"%":"{:.2f}%"}),
-        height=250
-    )
+    st.subheader(f"📊 Probabilità OVER (dal minuto live) - {team}")
+    extra_t = df_team["Home Goal FT"] + df_team["Away Goal FT"] - (live_h + live_a)
+    for thr in thresholds:
+        pct_t = round((extra_t > thr).mean()*100,2)
+        st.markdown(f"• **OVER {thr}:** {pct_t}%")
 
-    # Distribuzione TF per squadra
-    st.markdown(f"### ⏱️ Distribuzione Goal per Intervallo ({team})")
-    df_tf2 = pd.DataFrame(0, index=labels, columns=["Fatti","Subiti"])
-    for _, row in dft.iterrows():
-        hg = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
-        ag = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-        for m in hg:
-            if m>minute:
-                for (a,b),lbl in zip(bands,labels):
-                    if a< m <= b:
-                        df_tf2.at[lbl,"Fatti"] +=1; break
-        for m in ag:
-            if m>minute:
-                for (a,b),lbl in zip(bands,labels):
-                    if a< m <= b:
-                        df_tf2.at[lbl,"Subiti"] +=1; break
-    df_tf2["% Totale"] = ((df_tf2.sum(axis=1)/df_tf2.sum(axis=1).sum())*100).round(2)
-    st.dataframe(
-        df_tf2.reset_index().rename(columns={"index":"Intervallo"}),
-        height=250,
-        use_container_width=True
-    )
+    freq_t = freq[df_matched.index.isin(df_team.index)]
+    freq_df_t = freq_t.value_counts().reset_index()
+    freq_df_t.columns = ["Risultato","Occorrenze"]
+    freq_df_t["%"] = (freq_df_t["Occorrenze"] / len(df_team) * 100).round(2)
+    st.subheader(f"📋 Risultati finali più frequenti - {team}")
+    st.dataframe(freq_df_t.style.format({"%":"{:.2f}%"}))
 
-    # Grafici affiancati (squadra)
-    colC, colD = st.columns(2)
-    with colC:
-        fig3, ax3 = plt.subplots(figsize=(5,3))
-        fig3.patch.set_facecolor("white")
-        ax3.set_facecolor("white")
-        df_tf2[["Fatti","Subiti"]].plot.bar(ax=ax3, color=["#1f77b4","#ff7f0e"])
-        for i,(f,s) in enumerate(zip(df_tf2["Fatti"],df_tf2["Subiti"])):
-            ax3.text(i, f/2, str(f), ha="center", va="center", color="white", fontweight="bold")
-            ax3.text(i, f+s/2, str(s), ha="center", va="center", color="white", fontweight="bold")
-        ax3.set_xticklabels(labels, rotation=45, ha="right")
-        ax3.set_title(f"Goal Fatti vs Subiti per Intervallo ({team})", pad=15)
-        ax3.set_ylabel("Numero di goal")
-        ax3.grid(axis="y", linestyle="--", alpha=0.3)
-        st.pyplot(fig3)
+    st.subheader(f"⏱️ Distribuzione Goal per Intervallo - {team}")
+    data_t = []
+    for lbl,(a,b) in zip(tf_labels, tf_bands):
+        cnt_ht = sum(a < m <= b for row in df_team
+                     for m in extract_minutes(pd.Series([row.get("minuti goal segnato home","")])))
+        cnt_at = sum(a < m <= b for row in df_team
+                     for m in extract_minutes(pd.Series([row.get("minuti goal segnato away","")])))
+        data_t.append((lbl, cnt_ht, cnt_at))
+    tf_df_t = pd.DataFrame(data_t, columns=["Intervallo","Fatti","Subiti"])
+    tf_df_t["Totale"] = tf_df_t["Fatti"] + tf_df_t["Subiti"]
+    tf_df_t["% Totale"] = (tf_df_t["Totale"] / tf_df_t["Totale"].sum() * 100).round(2)
+    st.dataframe(tf_df_t.style.format({"% Totale":"{:.2f}%"}))
 
-    with colD:
-        fig4, ax4 = plt.subplots(figsize=(5,3))
-        fig4.patch.set_facecolor("white")
-        ax4.set_facecolor("white")
-        bars4 = ax4.bar(labels, df_tf2["% Totale"], color="#2ca02c")
-        for i,v in enumerate(df_tf2["% Totale"]):
-            ax4.text(i, v+0.5, f"{v}%", ha="center", va="bottom", fontweight="bold")
-        ax4.set_xticklabels(labels, rotation=45, ha="right")
-        ax4.set_title(f"% Goal per Intervallo ({team})", pad=15)
-        ax4.set_ylabel("% del totale")
-        ax4.grid(axis="y", linestyle="--", alpha=0.3)
-        st.pyplot(fig4)
+    fig2, ax2 = plt.subplots(figsize=(8,4))
+    fig2.patch.set_facecolor("white"); ax2.set_facecolor("white")
+    ax2.bar(tf_df_t["Intervallo"], tf_df_t["Fatti"],
+            label="Fatti", color="#1f77b4", alpha=0.8)
+    ax2.bar(tf_df_t["Intervallo"], tf_df_t["Subiti"],
+            bottom=tf_df_t["Fatti"], label="Subiti",
+            color="#ff7f0e", alpha=0.8)
+    for i,(tot,pct) in enumerate(zip(tf_df_t["Totale"], tf_df_t["% Totale"])):
+        ax2.text(i, tot+0.3, f"{tot} ({pct}%)",
+                 ha="center", va="bottom",
+                 color="black", fontweight="bold")
+    ax2.set_title(f"Goal Fatti/Subiti per Intervallo ({team})")
+    ax2.set_ylabel("Numero di goal")
+    ax2.legend(); ax2.grid(axis="y", linestyle="--", alpha=0.3)
+    st.pyplot(fig2)
