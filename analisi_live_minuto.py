@@ -138,6 +138,17 @@ def run_live_minute_analysis(df):
     x = tf_df["Time Frame"]
     ax2.bar(x, tf_df["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
     ax2.bar(x, tf_df["Goal Subiti"], bottom=tf_df["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
+    for i, (f, s) in enumerate(zip(tf_df["Goal Fatti"], tf_df["Goal Subiti"])):
+        totale = f + s
+        percentuale = round((totale / tf_df["Goal Totali"].sum()) * 100, 1)
+        ax2.text(i, f + s + 0.3, f"{percentuale}%", ha='center', fontsize=9, fontweight='bold')
+    ax2.set_title("Distribuzione Goal per Time Frame (Fatti + Subiti)")
+    ax2.set_ylabel("Goal Totali")
+    ax2.legend()
+    st.pyplot(fig2)
+    x = tf_df["Time Frame"]
+    ax2.bar(x, tf_df["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
+    ax2.bar(x, tf_df["Goal Subiti"], bottom=tf_df["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
     ax2.set_title("Distribuzione Goal per Time Frame (Fatti + Subiti)")
     ax2.set_ylabel("Goal Totali")
     ax2.legend()
@@ -234,7 +245,21 @@ def run_live_minute_analysis(df):
     x_sq = tf_df_sq["Time Frame"]
     ax3.bar(x_sq, tf_df_sq["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
     ax3.bar(x_sq, tf_df_sq["Goal Subiti"], bottom=tf_df_sq["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
+    for i, (f, s) in enumerate(zip(tf_df_sq["Goal Fatti"], tf_df_sq["Goal Subiti"])):
+        totale = f + s
+        percentuale = round((totale / tf_df_sq["Goal Totali"].sum()) * 100, 1)
+        ax3.text(i, f + s + 0.3, f"{percentuale}%", ha='center', fontsize=9, fontweight='bold')
     ax3.set_title("Distribuzione Goal Squadra per Time Frame (Fatti + Subiti)")
     ax3.set_ylabel("Goal Totali")
     ax3.legend()
     st.pyplot(fig3)
+    x_sq = tf_df_sq["Time Frame"]
+    ax3.bar(x_sq, tf_df_sq["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
+    ax3.bar(x_sq, tf_df_sq["Goal Subiti"], bottom=tf_df_sq["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
+    ax3.set_title("Distribuzione Goal Squadra per Time Frame (Fatti + Subiti)")
+    ax3.set_ylabel("Goal Totali")
+    ax3.legend()
+    st.pyplot(fig3)
+
+
+
