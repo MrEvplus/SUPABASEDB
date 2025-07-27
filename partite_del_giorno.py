@@ -29,10 +29,8 @@ def run_partite_del_giorno(df, db_selected):
                 # Proviamo a interpretare il CSV
                 uploaded_file.seek(0)
                 try:
-                    # separatore comma
                     df_today = pd.read_csv(uploaded_file)
                 except Exception:
-                    # separatore punto e virgola
                     uploaded_file.seek(0)
                     df_today = pd.read_csv(uploaded_file, sep=';', engine='python')
         except UnicodeDecodeError:
@@ -43,21 +41,33 @@ def run_partite_del_giorno(df, db_selected):
             st.error(f"Errore nel caricamento del file: {e}")
             st.stop()
 
-        # Se mancano le colonne Home/Away, tentiamo con codechipa1/codechipa2
+        # Mapping colonne nome squadre se presenti
+        if "txtechipa1" in df_today.columns and "txtechipa2" in df_today.columns:
+            df_today["Home"] = df_today["txtechipa1"]
+            df_today["Away"] = df_today["txtechipa2"]
+
+        # Se mancano ancora Home/Away, tentiamo con codechipa1/codechipa2
         if "Home" not in df_today.columns or "Away" not in df_today.columns:
             if "codechipa1" in df_today.columns and "codechipa2" in df_today.columns:
                 df_today["Home"] = df_today["codechipa1"]
                 df_today["Away"] = df_today["codechipa2"]
             else:
-                st.error("⚠️ Il file deve contenere le colonne 'Home' e 'Away', o in alternativa 'codechipa1' e 'codechipa2'.")
+                st.error("⚠️ Il file deve contenere 'txtechipa1'/'txtechipa2' o 'codechipa1'/'codechipa2'.")
                 st.stop()
 
         # Creiamo la lista delle partite
-        df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
+        df_today["match_str"] = df_today.apply(
+            lambda r: f"{r['Home']} vs {r['Away']}",
+            axis=1
+        )
         matches = df_today["match_str"].tolist()
 
         # Seleziona la partita
-        selected = st.selectbox("Seleziona la partita:", options=matches, key="selected_match")
+        selected = st.selectbox(
+            "Seleziona la partita:",
+            options=matches,
+            key="selected_match"
+        )
 
         if selected:
             casa, ospite = selected.split(" vs ")
