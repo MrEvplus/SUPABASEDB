@@ -123,4 +123,3 @@ def run_live_minute_analysis(df):
     ][["Stagione", "Home", "Away", "Home Goal FT", "Away Goal FT", "Label"]]
     df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
     st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
-
