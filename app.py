@@ -5,16 +5,16 @@ import json
 import requests
 import base64
 from datetime import date
+
 from macros import run_macro_stats
 from squadre import run_team_stats
 from pre_match import run_pre_match
+from correct_score_ev_sezione import run_correct_score_ev
 from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
-from analisi_live_minuto import run_live_minute_analysis  # NEW
-
-
+from analisi_live_minuto import run_live_minute_analysis
 
 # -------------------------------------------------------
 # CONFIGURAZIONE PAGINA
@@ -29,7 +29,6 @@ st.sidebar.title("📊 Trading Dashboard")
 # -------------------------------------------------------
 # MENU PRINCIPALE
 # -------------------------------------------------------
-
 menu_option = st.sidebar.radio(
     "Naviga tra le sezioni:",
     [
@@ -37,14 +36,14 @@ menu_option = st.sidebar.radio(
         "Statistiche per Squadre",
         "Confronto Pre Match",
         "Correct Score EV",
-        "Analisi Live da Minuto"  # ✅ NEW,
+        "Analisi Live da Minuto",
+        "Partite del Giorno"
     ]
 )
 
 # -------------------------------------------------------
 # SELEZIONE ORIGINE DATI
 # -------------------------------------------------------
-
 origine_dati = st.sidebar.radio(
     "Seleziona origine dati:",
     ["Supabase", "Upload Manuale"]
@@ -58,13 +57,10 @@ else:
 # -------------------------------------------------------
 # SESSION STATE PER SELEZIONE SQUADRE
 # -------------------------------------------------------
-
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
-
 if "squadra_ospite" not in st.session_state:
     st.session_state["squadra_ospite"] = ""
-
 if "campionato_corrente" not in st.session_state:
     st.session_state["campionato_corrente"] = db_selected
 else:
@@ -74,9 +70,8 @@ else:
         st.session_state["campionato_corrente"] = db_selected
 
 # -------------------------------------------------------
-# MAPPING COLONNE COMPLETO
+# MAPPING COLONNE COMPLETO E PULIZIA
 # -------------------------------------------------------
-
 col_map = {
     "country": "country",
     "sezonul": "Stagione",
@@ -93,71 +88,69 @@ col_map = {
     "place1a": "Posizione Classifica Home",
     "place2": "Posizione Classifica Away Generale",
     "place2d": "Posizione classifica away",
-    "cotaa": "Odd home",
+    "cotaa": "Odd Home",
     "cotad": "Odd Away",
     "cotae": "Odd Draw",
-    "cotao0": "odd over 0,5",
-    "cotao1": "odd over 1,5",
-    "cotao": "odd over 2,5",
-    "cotao3": "odd over 3,5",
-    "cotao4": "odd over 4,5",
-    "cotau0": "odds under 0,5",
-    "cotau1": "odd under 1,5",
-    "cotau": "odd under 2,5",
-    "cotau3": "odd under 3,5",
-    "cotau4": "odd under 4,5",
-    "gg": "gg",
-    "ng": "ng",
-    "elohomeo": "elohomeo",
-    "eloawayo": "eloawayo",
-    "formah": "form h",
-    "formaa": "form a",
-    "suth": "Tiri totali squadra HOME (full time)",
-    "suth1": "Tiri squadra HOME 1 tempo",
-    "suth2": "Tiri squadra HOME 2 tempo",
-    "suta": "Tiri totali squadra AWAY (full time)",
-    "suta1": "Tiri squadra AWAY 1 tempo",
-    "suta2": "Tiri squadra AWAY 2 tempo",
-    "sutht": "Tiri in porta squadra HOME (full time)",
-    "sutht1": "Tiri in porta squadra HOME 1 tempo",
-    "sutht2": "Tiri in porta squadra HOME 2 tempo",
-    "sutat": "Tiri in porta squadra AWAY (full time)",
-    "sutat1": "Tiri in porta squadra AWAY 1 tempo",
-    "sutat2": "Tiri in porta squadra AWAY 2 tempo",
-    "mgolh": "minuti goal segnato home",
-    "gh1": "home 1 goal segnato (min)",
-    "gh2": "home 2 goal segnato(min)",
-    "gh3": "home 3 goal segnato(min)",
-    "gh4": "home 4 goal segnato(min)",
-    "gh5": "home 5 goal segnato(min)",
-    "gh6": "home 6 goal segnato(min)",
-    "gh7": "home 7 goal segnato(min)",
-    "gh8": "home 8 goal segnato(min)",
-    "gh9": "home 9 goal segnato(min)",
-    "mgola": "minuti goal segnato away",
-    "ga1": "1 goal away (min)",
-    "ga2": "2 goal away (min)",
-    "ga3": "3 goal away (min)",
-    "ga4": "4 goal away (min)",
-    "ga5": "5 goal away (min)",
-    "ga6": "6 goal away (min)",
-    "ga7": "7 goal away (min)",
-    "ga8": "8 goal away (min)",
-    "ga9": "9 goal away (min)",
-    "stare": "stare",
-    "codechipa1": "codechipa1",
-    "codechipa2": "codechipa2"
+    "cotao0": "Odd Over 0.5",
+    "cotao1": "Odd Over 1.5",
+    "cotao": "Odd Over 2.5",
+    "cotao3": "Odd Over 3.5",
+    "cotao4": "Odd Over 4.5",
+    "cotau0": "Odd Under 0.5",
+    "cotau1": "Odd Under 1.5",
+    "cotau": "Odd Under 2.5",
+    "cotau3": "Odd Under 3.5",
+    "cotau4": "Odd Under 4.5",
+    "gg": "GG",
+    "ng": "NG",
+    "elohomeo": "ELO Home",
+    "eloawayo": "ELO Away",
+    "formah": "Form Home",
+    "formaa": "Form Away",
+    "suth": "Tiri Totali Home FT",
+    "suth1": "Tiri Home 1T",
+    "suth2": "Tiri Home 2T",
+    "suta": "Tiri Totali Away FT",
+    "suta1": "Tiri Away 1T",
+    "suta2": "Tiri Away 2T",
+    "sutht": "Tiri in Porta Home FT",
+    "sutht1": "Tiri in Porta Home 1T",
+    "sutht2": "Tiri in Porta Home 2T",
+    "sutat": "Tiri in Porta Away FT",
+    "sutat1": "Tiri in Porta Away 1T",
+    "sutat2": "Tiri in Porta Away 2T",
+    "mgolh": "Minuti Goal Home",
+    "gh1": "Home Goal 1 (min)",
+    "gh2": "Home Goal 2 (min)",
+    "gh3": "Home Goal 3 (min)",
+    "gh4": "Home Goal 4 (min)",
+    "gh5": "Home Goal 5 (min)",
+    "gh6": "Home Goal 6 (min)",
+    "gh7": "Home Goal 7 (min)",
+    "gh8": "Home Goal 8 (min)",
+    "gh9": "Home Goal 9 (min)",
+    "mgola": "Minuti Goal Away",
+    "ga1": "Away Goal 1 (min)",
+    "ga2": "Away Goal 2 (min)",
+    "ga3": "Away Goal 3 (min)",
+    "ga4": "Away Goal 4 (min)",
+    "ga5": "Away Goal 5 (min)",
+    "ga6": "Away Goal 6 (min)",
+    "ga7": "Away Goal 7 (min)",
+    "ga8": "Away Goal 8 (min)",
+    "ga9": "Away Goal 9 (min)",
+    "stare": "Stare",
+    "codechipa1": "CodeChipa1",
+    "codechipa2": "CodeChipa2"
 }
 
 df.rename(columns=col_map, inplace=True)
-
-# Pulizia colonne
 df.columns = (
     df.columns
-    .astype(str)
-    .str.strip()
-    .str.replace(r"[\n\r\t]", "", regex=True)
-    .str.replace(r"\s+", " ", regex=True)
+      .astype(str)
+      .str.strip()
+      .str.replace(r"[\n\r\t]", "", regex=True)
+      .str.replace(r"\s+", " ", regex=True)
 )
 
 # Crea colonna Label se non presente
@@ -193,7 +186,6 @@ if "Data" in df.columns:
 # -------------------------------------------------------
 # CHIAMATA MODULI
 # -------------------------------------------------------
-
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
 
@@ -203,8 +195,52 @@ elif menu_option == "Statistiche per Squadre":
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
 
-elif menu_option == "Analisi Live da Minuto":
-    run_live_minute_analysis(df)  # ✅ NEW
 elif menu_option == "Correct Score EV":
-    from correct_score_ev_sezione import run_correct_score_ev
     run_correct_score_ev(df, db_selected)
+
+elif menu_option == "Analisi Live da Minuto":
+    run_live_minute_analysis(df)
+
+elif menu_option == "Partite del Giorno":
+    st.title("📅 Partite del Giorno - Upload CSV")
+    uploaded_file = st.file_uploader(
+        "Carica il file CSV delle partite del giorno:",
+        type="csv",
+        key="file_uploader_today"
+    )
+
+    if uploaded_file is not None:
+        df_today = pd.read_csv(uploaded_file)
+
+        if "Home" not in df_today.columns or "Away" not in df_today.columns:
+            st.error("⚠️ Il CSV deve contenere le colonne 'Home' e 'Away'.")
+        else:
+            df_today["match_str"] = df_today.apply(
+                lambda r: f"{r['Home']} vs {r['Away']}", axis=1
+            )
+            matches = df_today["match_str"].tolist()
+
+            selected = st.selectbox(
+                "Seleziona la partita:",
+                options=matches,
+                key="selected_match"
+            )
+
+            if selected:
+                casa, ospite = selected.split(" vs ")
+                st.session_state["squadra_casa"] = casa
+                st.session_state["squadra_ospite"] = ospite
+
+                st.markdown(f"### Statistiche per {casa} vs {ospite}")
+                run_macro_stats(df, db_selected)
+                run_team_stats(df, db_selected)
+                run_pre_match(df, db_selected)
+                run_correct_score_ev(df, db_selected)
+
+                if st.button("🔙 Torna indietro"):
+                    del st.session_state["selected_match"]
+                    st.session_state["squadra_casa"] = ""
+                    st.session_state["squadra_ospite"] = ""
+                    st.experimental_rerun()
+    else:
+        st.info("ℹ️ Carica un file CSV per visualizzare le partite del giorno.")
