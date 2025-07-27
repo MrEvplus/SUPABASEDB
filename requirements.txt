@@ -6,3 +6,5 @@ openpyxl
 streamlit-aggrid
 supabase
 duckdb
+requests  # per chiamate API HuggingFace
+matplotlib
