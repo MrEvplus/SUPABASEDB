@@ -12,6 +12,8 @@ from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
+from analisi_live_minuto import run_live_minute_analysis  # NEW
+
 
 
 # -------------------------------------------------------
@@ -38,6 +40,7 @@ menu_option = st.sidebar.radio(
         "Partite del Giorno",
         "Scarica Mappatura Leghe da API",
         "Correct Score EV"
+        "Analisi Live da Minuto",  # ✅ NEW
     ]
 )
 
@@ -297,7 +300,8 @@ elif menu_option == "Partite del Giorno":
             )
 
 
+elif menu_option == "Analisi Live da Minuto":
+    run_live_minute_analysis(df)  # ✅ NEW
 elif menu_option == "Correct Score EV":
     from correct_score_ev_sezione import run_correct_score_ev
     run_correct_score_ev(df, db_selected)
-
