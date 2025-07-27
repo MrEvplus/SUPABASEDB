@@ -146,20 +146,7 @@ def run_live_minute_analysis(df):
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig)
 
-    
-# ✅ Crea tf_df_sq PRIMA dei grafici per evitare UnboundLocalError
-if not filtered_squadre.empty:
-    tf_df_sq = pd.DataFrame({
-        "Time Frame": list(tf_counts_sq.keys()),
-        "Goal Totali": list(tf_counts_sq.values()),
-        "Goal Fatti": list(tf_fatti_sq.values()),
-        "Goal Subiti": list(tf_subiti_sq.values())
-    })
-    tf_df_sq["%"] = round((tf_df_sq["Goal Totali"] / tf_df_sq["Goal Totali"].sum()) * 100, 2)
-else:
-    tf_df_sq = pd.DataFrame(columns=["Time Frame", "Goal Totali", "Goal Fatti", "Goal Subiti", "%"])
-
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
     with col1:
         fig2, ax2 = plt.subplots(figsize=(6, 4))
