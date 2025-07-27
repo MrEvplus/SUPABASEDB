@@ -40,7 +40,6 @@ menu_option = st.sidebar.radio(
         "Analisi Live da Minuto"  # ✅ NEW,
     ]
 )
-)
 
 # -------------------------------------------------------
 # SELEZIONE ORIGINE DATI
