@@ -36,12 +36,10 @@ menu_option = st.sidebar.radio(
         "Macro Stats per Campionato",
         "Statistiche per Squadre",
         "Confronto Pre Match",
-	"Domande AI",
-        "Partite del Giorno",
-        "Scarica Mappatura Leghe da API",
-        "Correct Score EV"
-        "Analisi Live da Minuto",  # ✅ NEW
+        "Correct Score EV",
+        "Analisi Live da Minuto"  # ✅ NEW,
     ]
+)
 )
 
 # -------------------------------------------------------
@@ -205,100 +203,6 @@ elif menu_option == "Statistiche per Squadre":
 
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
-
-elif menu_option == "Domande AI":
-    run_ai_inference(df, db_selected)  # ✅ aggiunto per attivare l'intelligenza artificiale
-
-elif menu_option == "Scarica Mappatura Leghe da API":
-    st.title("🔎 Scarica Mappatura Leghe da API-FOOTBALL")
-
-    if st.button("Scarica elenco leghe da API-FOOTBALL"):
-        API_KEY = st.secrets["API_FOOTBALL_KEY"]
-        st.write("✅ Chiave API caricata:", API_KEY)
-
-        url = "https://v3.football.api-sports.io/leagues"
-
-        headers = {
-            'x-rapidapi-host': "v3.football.api-sports.io",
-            'x-rapidapi-key': API_KEY
-        }
-
-        response = requests.get(url, headers=headers)
-
-        st.write("✅ Status code API:", response.status_code)
-
-        data = response.json()
-        st.write("✅ JSON restituito dalla API:")
-        st.json(data)
-
-        if "response" not in data or len(data["response"]) == 0:
-            st.warning("⚠️ Nessuna lega trovata o errore nella risposta API.")
-        else:
-            leagues = []
-
-            for l in data.get("response", []):
-                country_name = l["country"]["name"]
-                league_name = l["league"]["name"]
-                league_id = l["league"]["id"]
-
-                leagues.append({
-                    "Country": country_name,
-                    "League": league_name,
-                    "LeagueID": league_id
-                })
-
-            df_leagues = pd.DataFrame(leagues)
-
-            st.success(f"Scaricate {len(df_leagues)} leghe.")
-            st.dataframe(df_leagues, use_container_width=True)
-
-            csv = df_leagues.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="💾 Scarica CSV mapping leghe",
-                data=csv,
-                file_name="leagues_mapping.csv",
-                mime="text/csv"
-            )
-
-elif menu_option == "Partite del Giorno":
-    st.title("📅 Partite del Giorno - Campionati presenti nel Database")
-
-    campionati_db = sorted(df["country"].dropna().unique().tolist())
-    st.info(f"Campionati presenti nel DB: {campionati_db}")
-
-    country_mapping = {
-        "Ita1": "Italy",
-        "Spa1": "Spain",
-        "Ger1": "Germany",
-        "Fra1": "France",
-        "Eng1": "England",
-        "Ice1": "Iceland",
-    }
-
-    campionati_api = [
-        country_mapping.get(c, None) for c in campionati_db
-    ]
-    campionati_api = [c for c in campionati_api if c is not None]
-
-    st.info(f"Campionati convertiti per API Football: {campionati_api}")
-
-    if st.button("Carica Partite di Oggi"):
-        df_matches = get_fixtures_today_for_countries(campionati_api)
-
-        if df_matches.empty:
-            st.info("⚠️ Nessuna partita trovata per oggi nei campionati presenti nel database.")
-        else:
-            st.success(f"Trovate {len(df_matches)} partite nei campionati presenti nel DB.")
-            st.dataframe(df_matches, use_container_width=True)
-
-            csv = df_matches.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="💾 Scarica CSV",
-                data=csv,
-                file_name="partite_oggi.csv",
-                mime="text/csv"
-            )
-
 
 elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)  # ✅ NEW
