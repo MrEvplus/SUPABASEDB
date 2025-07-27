@@ -123,3 +123,63 @@ def run_live_minute_analysis(df):
     ][["Stagione", "Home", "Away", "Home Goal FT", "Away Goal FT", "Label"]]
     df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
     st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
+
+    # 🔍 Statistiche solo sulle partite della squadra selezionata
+    st.markdown("### 📊 Statistiche Partite Squadra Selezionata (post-minuto selezionato)")
+    post_goals_sq = 0
+    over_stats_sq = {1.5: 0, 2.5: 0, 3.5: 0, 4.5: 0}
+    final_scores_sq = []
+    tf_counts_sq = {k:0 for k in tf_labels}
+
+    for _, row in df_squadra.iterrows():
+        home_goals = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
+        away_goals = extract_minutes(pd.Series([row.get("minuti goal segnato away", "")]))
+        all_goals = home_goals + away_goals
+
+        post_goals_m45 = [m for m in all_goals if m > 45]
+        if post_goals_m45:
+            post_goals_sq += 1
+
+        total_goals = row["Home Goal FT"] + row["Away Goal FT"]
+        for soglia in over_stats_sq:
+            if total_goals > soglia:
+                over_stats_sq[soglia] += 1
+
+        for m in all_goals:
+            for i, (a, b) in enumerate(tf_bands):
+                if a < m <= b:
+                    tf_counts_sq[tf_labels[i]] += 1
+                    break
+
+        final_scores_sq.append(f"{int(row['Home Goal FT'])}-{int(row['Away Goal FT'])}")
+
+    n_sq = len(df_squadra)
+    st.markdown(f"📊 % Partite con almeno 1 goal dopo il minuto 45: **{round(post_goals_sq / n_sq * 100, 2)}%**")
+    for soglia in over_stats_sq:
+        pct = round(over_stats_sq[soglia] / n_sq * 100, 2)
+        st.markdown(f"📈 OVER {soglia}: **{pct}%**")
+
+    st.markdown("### 🧾 Risultati Finali più frequenti")
+    final_sq = pd.Series(final_scores_sq).value_counts().reset_index()
+    final_sq.columns = ["Risultato", "Occorrenze"]
+    st.dataframe(final_sq)
+
+    st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
+    tf_df_sq = pd.DataFrame(list(tf_counts_sq.items()), columns=["Time Frame", "Goal Segnati"])
+    tf_df_sq["%"] = round((tf_df_sq["Goal Segnati"] / tf_df_sq["Goal Segnati"].sum()) * 100, 2)
+    st.dataframe(tf_df_sq)
+
+    # 📊 Grafico a barre anche per la squadra selezionata
+    import matplotlib.pyplot as plt
+    fig_sq, ax_sq = plt.subplots(figsize=(10, 4))
+    bars_sq = ax_sq.bar(tf_df_sq["Time Frame"], tf_df_sq["Goal Segnati"], color='salmon')
+    for i, val in enumerate(tf_df_sq["%"]):
+        ax_sq.text(i, tf_df_sq["Goal Segnati"][i] + 0.3, f"{val}%", ha='center', fontsize=9, fontweight='bold')
+
+    ax_sq.set_title("Distribuzione Goal per Time Frame - Squadra", fontsize=13)
+    ax_sq.set_ylabel("Goal Segnati")
+    ax_sq.set_ylim(0, tf_df_sq["Goal Segnati"].max() + 2)
+    ax_sq.grid(axis='y', linestyle='--', alpha=0.5)
+    st.pyplot(fig_sq)
+
+
