@@ -29,6 +29,7 @@ st.sidebar.title("📊 Trading Dashboard")
 # -------------------------------------------------------
 # MENU PRINCIPALE
 # -------------------------------------------------------
+
 menu_option = st.sidebar.radio(
     "Naviga tra le sezioni:",
     [
@@ -44,6 +45,7 @@ menu_option = st.sidebar.radio(
 # -------------------------------------------------------
 # SELEZIONE ORIGINE DATI
 # -------------------------------------------------------
+
 origine_dati = st.sidebar.radio(
     "Seleziona origine dati:",
     ["Supabase", "Upload Manuale"]
@@ -57,6 +59,7 @@ else:
 # -------------------------------------------------------
 # SESSION STATE PER SELEZIONE SQUADRE
 # -------------------------------------------------------
+
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
 if "squadra_ospite" not in st.session_state:
@@ -72,6 +75,7 @@ else:
 # -------------------------------------------------------
 # MAPPING COLONNE COMPLETO E PULIZIA
 # -------------------------------------------------------
+
 col_map = {
     "country": "country",
     "sezonul": "Stagione",
@@ -145,6 +149,8 @@ col_map = {
 }
 
 df.rename(columns=col_map, inplace=True)
+# Pulizia colonne
+
 df.columns = (
     df.columns
       .astype(str)
@@ -184,8 +190,9 @@ if "Data" in df.columns:
     df = df[(df["Data"].isna()) | (df["Data"] <= today)]
 
 # -------------------------------------------------------
-# CHIAMATA MODULI
+# ESECUZIONE SEZIONI
 # -------------------------------------------------------
+
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
 
@@ -202,18 +209,31 @@ elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)
 
 elif menu_option == "Partite del Giorno":
-    st.title("📅 Partite del Giorno - Upload CSV")
+    st.title("📅 Partite del Giorno - Upload File")
     uploaded_file = st.file_uploader(
-        "Carica il file CSV delle partite del giorno:",
-        type="csv",
+        "Carica il file delle partite del giorno (CSV, XLSX, XLS):",
+        type=["csv", "xlsx", "xls"],
         key="file_uploader_today"
     )
 
     if uploaded_file is not None:
-        df_today = pd.read_csv(uploaded_file)
+        # Lettura gestita in base all'estensione e fallback encoding
+        try:
+            if uploaded_file.name.lower().endswith(('.xls', '.xlsx')):
+                df_today = pd.read_excel(uploaded_file)
+            else:
+                try:
+                    df_today = pd.read_csv(uploaded_file)
+                except UnicodeDecodeError:
+                    uploaded_file.seek(0)
+                    df_today = pd.read_csv(uploaded_file, encoding='latin1')
+        except Exception as e:
+            st.error(f"Errore nel caricamento del file: {e}")
+            st.stop()
 
+        # Verifica colonne obbligatorie
         if "Home" not in df_today.columns or "Away" not in df_today.columns:
-            st.error("⚠️ Il CSV deve contenere le colonne 'Home' e 'Away'.")
+            st.error("⚠️ Il file deve contenere le colonne 'Home' e 'Away'.")
         else:
             df_today["match_str"] = df_today.apply(
                 lambda r: f"{r['Home']} vs {r['Away']}", axis=1
@@ -243,4 +263,4 @@ elif menu_option == "Partite del Giorno":
                     st.session_state["squadra_ospite"] = ""
                     st.experimental_rerun()
     else:
-        st.info("ℹ️ Carica un file CSV per visualizzare le partite del giorno.")
+        st.info("ℹ️ Carica un file per visualizzare le partite del giorno.")
