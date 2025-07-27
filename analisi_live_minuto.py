@@ -17,19 +17,20 @@ def run_live_minute_analysis(df):
     with col3:
         quota_away = st.number_input("Quota Away", min_value=1.01, step=0.01, value=3.80)
 
-    minuto_corrente = st.slider("⏱️ Minuto attuale", min_value=1, max_value=120, value=5)
-    risultato_live = st.text_input("📟 Risultato live (es. 1-0)", value="1-0")
+    minuto_corrente = st.slider("⏱️ Minuto attuale", min_value=1, max_value=120, value=60)
+    risultato_live = st.text_input("📟 Risultato live (es. 1-1)", value="1-1")
 
     try:
-        goal_home, goal_away = map(int, risultato_live.strip().split("-"))
+        goal_home_live, goal_away_live = map(int, risultato_live.strip().split("-"))
     except:
-        st.error("⚠️ Inserisci un risultato valido (es. 1-0).")
+        st.error("⚠️ Inserisci un risultato valido (es. 1-1).")
         return
 
     label = label_match({"Odd home": quota_home, "Odd Away": quota_away})
+    db_selected = st.session_state.get("campionato_corrente")
+
     st.markdown(f"🔖 **Label identificato:** `{label}`")
 
-    db_selected = st.session_state.get("campionato_corrente")
     if not db_selected:
         st.warning("⚠️ Nessun campionato selezionato.")
         return
@@ -37,54 +38,65 @@ def run_live_minute_analysis(df):
     df["Label"] = df.apply(label_match, axis=1)
     df_filtered = df[(df["Label"] == label) & (df["country"] == db_selected)].copy()
 
-    is_away_fav = label.startswith("A_")
-    is_home_fav = label.startswith("H_")
+    if df_filtered.empty:
+        st.warning("⚠️ Nessuna partita trovata con questo Label e campionato.")
+        return
 
-    if is_home_fav:
-        df_filtered = df_filtered[
-            (df_filtered["Home"] == squadra_casa) &
-            (df_filtered["Home Goal FT"] == goal_home)
-        ]
-    elif is_away_fav:
-        df_filtered = df_filtered[
-            (df_filtered["Away"] == squadra_ospite) &
-            (df_filtered["Away Goal FT"] == goal_away)
-        ]
-    else:
-        df_filtered = df_filtered[
-            (df_filtered["Home Goal FT"] == goal_home) &
-            (df_filtered["Away Goal FT"] == goal_away)
-        ]
-
-    st.markdown("## 🔎 Analisi Storica - Campionato, Label e Gol esatti nel minuto selezionato")
-    st.write(f"📂 Partite trovate: {len(df_filtered)}")
-
-    partite_con_goal_dopo = 0
+    matched_rows = []
     for _, row in df_filtered.iterrows():
-        minuti = extract_minutes(pd.Series([row["minuti goal segnato home"]])) + extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-        if any(m > minuto_corrente for m in minuti):
-            partite_con_goal_dopo += 1
+        home_goals = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
+        away_goals = extract_minutes(pd.Series([row.get("minuti goal segnato away", "")]))
+        goals_home_up_to = sum(1 for m in home_goals if m <= minuto_corrente)
+        goals_away_up_to = sum(1 for m in away_goals if m <= minuto_corrente)
 
-    pct_goal_dopo = round(partite_con_goal_dopo / len(df_filtered) * 100, 2) if len(df_filtered) > 0 else 0
-    st.success(f"📍 Nel {pct_goal_dopo}% dei casi c'è stato un goal DOPO il minuto {minuto_corrente}")
+        if goals_home_up_to == goal_home_live and goals_away_up_to == goal_away_live:
+            matched_rows.append(row)
 
-    df_filtered["TotGol"] = df_filtered["Home Goal FT"] + df_filtered["Away Goal FT"]
-    for soglia in [1.5, 2.5, 3.5, 4.5]:
-        pct_over = round((df_filtered["TotGol"] > soglia).mean() * 100, 2)
-        st.markdown(f"📈 OVER {soglia}: **{pct_over}%**")
+    if not matched_rows:
+        st.warning("❌ Nessuna partita storica trovata con questo punteggio live al minuto selezionato.")
+        return
 
+    df_matched = pd.DataFrame(matched_rows)
+    st.success(f"✅ Trovate {len(df_matched)} partite con punteggio {goal_home_live}-{goal_away_live} al minuto {minuto_corrente}")
+
+    # Calcolo cosa è successo DOPO quel minuto
+    goal_dopo = 0
+    over_stats = {1.5: 0, 2.5: 0, 3.5: 0, 4.5: 0}
+    final_scores = []
     tf_bands = [(0,15), (16,30), (31,45), (46,60), (61,75), (76,120)]
     tf_labels = [f"{a}-{b}" for a,b in tf_bands]
     tf_counts = {k:0 for k in tf_labels}
 
-    for _, row in df_filtered.iterrows():
-        minuti = extract_minutes(pd.Series([row["minuti goal segnato home"]])) + extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-        for m in minuti:
+    for _, row in df_matched.iterrows():
+        home_goals = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
+        away_goals = extract_minutes(pd.Series([row.get("minuti goal segnato away", "")]))
+
+        post_goals = [m for m in home_goals + away_goals if m > minuto_corrente]
+        if post_goals:
+            goal_dopo += 1
+        for m in home_goals + away_goals:
             for a,b in tf_bands:
                 if a < m <= b:
                     tf_counts[f"{a}-{b}"] += 1
                     break
 
+        total_goals = row["Home Goal FT"] + row["Away Goal FT"]
+        for soglia in over_stats:
+            if total_goals > soglia:
+                over_stats[soglia] += 1
+        final_scores.append(f"{int(row['Home Goal FT'])}-{int(row['Away Goal FT'])}")
+
+    st.markdown(f"📊 **% Partite con almeno 1 goal dopo il minuto {minuto_corrente}:** `{round(goal_dopo/len(df_matched)*100,2)}%`")
+
+    for soglia in over_stats:
+        pct = round(over_stats[soglia] / len(df_matched) * 100, 2)
+        st.markdown(f"📈 OVER {soglia}: **{pct}%**")
+
+    st.markdown("### 🧾 Risultati Finali più frequenti")
+    final_series = pd.Series(final_scores).value_counts().reset_index()
+    final_series.columns = ["Risultato", "Occorrenze"]
+    st.dataframe(final_series)
+
+    st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
     tf_df = pd.DataFrame(list(tf_counts.items()), columns=["Time Frame", "Goal Segnati"])
-    st.markdown("### 🧮 Distribuzione Goal per Time Frame")
-    st.dataframe(tf_df)
+    st.dataframe(
