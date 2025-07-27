@@ -176,8 +176,8 @@ if "Stagione" in df.columns:
         df = df[df["Stagione"].isin(stagioni_scelte)]
 
 # Debug colonne
-st.write("✅ Colonne presenti nel dataset:")
-st.write(list(df.columns))
+with st.expander("✅ Colonne presenti nel dataset", expanded=False):
+    st.write(list(df.columns))
 
 # Controllo colonna essenziale "Home"
 if "Home" not in df.columns:
