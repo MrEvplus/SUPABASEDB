@@ -27,77 +27,86 @@ def run_live_minute_analysis(df):
         return
 
     label = label_match({"Odd home": quota_home, "Odd Away": quota_away})
-    st.markdown(f"🔖 **Label identificato**: `{label}`")
+    st.markdown(f"🔖 **Label identificato:** `{label}`")
 
+    st.markdown("## 🔎 1. Analisi Storica - Campionato & Label")
     df["Label"] = df.apply(label_match, axis=1)
     df_filtrato = df[df["Label"] == label].copy()
-    df_filtrato["goals_home"] = df_filtrato["Home Goal FT"]
-    df_filtrato["goals_away"] = df_filtrato["Away Goal FT"]
-    df_filtrato["score_ft"] = df_filtrato["goals_home"].astype(int).astype(str) + "-" + df_filtrato["goals_away"].astype(int).astype(str)
+    df_filtrato["TotGol"] = df_filtrato["Home Goal FT"] + df_filtrato["Away Goal FT"]
+    df_filtrato["score_ft"] = df_filtrato["Home Goal FT"].astype(int).astype(str) + "-" + df_filtrato["Away Goal FT"].astype(int).astype(str)
 
     df_minuto = df_filtrato[
         (df_filtrato["Home Goal FT"] >= goal_home) &
         (df_filtrato["Away Goal FT"] >= goal_away)
     ]
 
-    st.markdown("### 📊 Analisi Storica dal Minuto Selezionato")
-    st.write(f"⚙️ Partite analizzate con Label `{label}` e risultato parziale ≥ {goal_home}-{goal_away}: {len(df_minuto)}")
+    st.write(f"🧮 Partite storiche filtrate per questo Label: {len(df_minuto)}")
 
-    goal_dopo_minuto = 0
-    for idx, row in df_minuto.iterrows():
-        min_h = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
-        min_a = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-        all_minuti = min_h + min_a
-        if any(m > minuto_corrente for m in all_minuti):
-            goal_dopo_minuto += 1
+    # Calcolo % goal dopo il minuto corrente
+    partite_con_goal_dopo = 0
+    for _, row in df_minuto.iterrows():
+        minuti = extract_minutes(pd.Series([row["minuti goal segnato home"]])) + extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+        if any(m > minuto_corrente for m in minuti):
+            partite_con_goal_dopo += 1
+    pct_goal_dopo = round(partite_con_goal_dopo / len(df_minuto) * 100, 2) if len(df_minuto) > 0 else 0
+    st.success(f"📍 Nel {pct_goal_dopo}% dei casi c'è stato un goal dopo il minuto {minuto_corrente}")
 
-    pct = round(goal_dopo_minuto / len(df_minuto) * 100, 2) if len(df_minuto) > 0 else 0
-    st.success(f"📍 Nel {pct}% dei casi c'è stato un goal dopo il minuto {minuto_corrente}")
-
-    df_minuto["TotGol"] = df_minuto["Home Goal FT"] + df_minuto["Away Goal FT"]
     for soglia in [1.5, 2.5, 3.5, 4.5]:
         pct_over = round((df_minuto["TotGol"] > soglia).mean() * 100, 2)
-        st.markdown(f"📈 % OVER {soglia}: **{pct_over}%**")
+        st.markdown(f"📈 OVER {soglia}: **{pct_over}%**")
 
-    top_scores = df_minuto["score_ft"].value_counts().head(5)
-    st.markdown("### 🔚 Risultati Finali più frequenti")
-    st.dataframe(top_scores.rename("Occorrenze"))
+    # Tabella risultati finali
+    st.markdown("### 🧾 Risultati Finali più frequenti")
+    st.dataframe(df_minuto["score_ft"].value_counts().head(10).rename("Occorrenze"))
 
+    # Time Frame Table
+    st.markdown("### ⏲️ Distribuzione Goal per Time Frame (Campionato & Label)")
+    tf_bands = [(0,15), (16,30), (31,45), (46,60), (61,75), (76,120)]
+    tf_labels = [f"{a}-{b}" for a,b in tf_bands]
+    tf_counts = {k:0 for k in tf_labels}
+
+    for _, row in df_minuto.iterrows():
+        minutes = extract_minutes(pd.Series([row["minuti goal segnato home"]])) + extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+        for m in minutes:
+            for a,b in tf_bands:
+                if a < m <= b:
+                    tf_counts[f"{a}-{b}"] += 1
+                    break
+    tf_df = pd.DataFrame(list(tf_counts.items()), columns=["Time Frame", "Goal Segnati"])
+    st.dataframe(tf_df)
+
+    # Analisi squadre
+    st.markdown("## 🧠 2. Analisi per Squadre Selezionate")
     df_squadre = df[
         ((df["Home"] == squadra_casa) & (df["Away"] == squadra_ospite)) |
         ((df["Home"] == squadra_ospite) & (df["Away"] == squadra_casa))
     ]
+    df_squadre = df_squadre[df_squadre["Label"] == label]
     df_squadre = df_squadre[
         (df_squadre["Home Goal FT"] >= goal_home) &
         (df_squadre["Away Goal FT"] >= goal_away)
     ]
 
-    st.markdown("---")
-    st.markdown("## 🧠 Analisi Specifica per le Squadre Selezionate")
-
     if df_squadre.empty:
-        st.warning("⚠️ Nessun match storico trovato tra le due squadre con quel risultato parziale.")
+        st.warning("⚠️ Nessun match storico trovato tra le due squadre con questo Label e parziale.")
     else:
-        goal_squadre = 0
-        for idx, row in df_squadre.iterrows():
-            min_h = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
-            min_a = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
-            all_minuti = min_h + min_a
-            if any(m > minuto_corrente for m in all_minuti):
-                goal_squadre += 1
-
-        pct_goal = round(goal_squadre / len(df_squadre) * 100, 2)
-        st.markdown(f"📊 % goal dopo il {minuto_corrente}': **{pct_goal}%**")
+        st.write(f"🎯 Match filtrati tra le due squadre con Label `{label}`: {len(df_squadre)}")
+        count_goal_late = 0
+        for _, row in df_squadre.iterrows():
+            minuti = extract_minutes(pd.Series([row["minuti goal segnato home"]])) + extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+            if any(m > minuto_corrente for m in minuti):
+                count_goal_late += 1
+        pct_squadre = round(count_goal_late / len(df_squadre) * 100, 2)
+        st.markdown(f"📊 % match con goal dopo il {minuto_corrente}: **{pct_squadre}%**")
 
         df_squadre["TotGol"] = df_squadre["Home Goal FT"] + df_squadre["Away Goal FT"]
         for soglia in [1.5, 2.5, 3.5, 4.5]:
-            pct_over_sq = round((df_squadre["TotGol"] > soglia).mean() * 100, 2)
-            st.markdown(f"📈 [SQUADRE] % OVER {soglia}: **{pct_over_sq}%**")
+            pct = round((df_squadre["TotGol"] > soglia).mean() * 100, 2)
+            st.markdown(f"📈 OVER {soglia} [solo squadre]: **{pct}%**")
 
-    st.markdown("---")
-    st.markdown("## 🤖 Sintesi Probabilistica")
-
-    if goal_dopo_minuto > 0:
-        st.markdown("✅ **Goal probabile nel finale** in base a storico generale e matchup.")
+    # Sintesi
+    st.markdown("## 🧮 3. Sintesi Probabilistica")
+    if pct_goal_dopo >= 60 or (df_squadre is not None and not df_squadre.empty and pct_squadre >= 60):
+        st.success("✅ Goal probabile nel finale, in base a storico campionato + matchup squadre.")
     else:
-        st.markdown("⚠️ **Match storicamente bloccato dopo questo momento.**")
+        st.warning("⚠️ Match spesso bloccato dopo questo momento nei dati storici.")
