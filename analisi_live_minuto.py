@@ -64,6 +64,8 @@ def run_live_minute_analysis(df):
     tf_bands = [(0,15), (16,30), (31,45), (46,60), (61,75), (76,90)]
     tf_labels = [f"{a}-{b}" for a,b in tf_bands[:-1]] + ["76-90+"]
     tf_counts = {k:0 for k in tf_labels}
+    tf_fatti = {k:0 for k in tf_labels}
+    tf_subiti = {k:0 for k in tf_labels}
 
     for _, row in df_matched.iterrows():
         home_goals = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
@@ -73,7 +75,18 @@ def run_live_minute_analysis(df):
         if post_goals:
             goal_dopo += 1
 
-        for m in home_goals + away_goals:
+        for m in home_goals:
+            for i, (a, b) in enumerate(tf_bands):
+                if a < m <= b:
+                    tf_counts[tf_labels[i]] += 1
+                    tf_fatti[tf_labels[i]] += 1
+                    break
+        for m in away_goals:
+            for i, (a, b) in enumerate(tf_bands):
+                if a < m <= b:
+                    tf_counts[tf_labels[i]] += 1
+                    tf_subiti[tf_labels[i]] += 1
+                    break
             for i, (a, b) in enumerate(tf_bands):
                 if a < m <= b:
                     tf_counts[tf_labels[i]] += 1
@@ -98,7 +111,12 @@ def run_live_minute_analysis(df):
     st.dataframe(final_series)
 
     st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
-    tf_df = pd.DataFrame(list(tf_counts.items()), columns=["Time Frame", "Goal Segnati"])
+    tf_df = pd.DataFrame({
+        "Time Frame": list(tf_counts.keys()),
+        "Goal Totali": list(tf_counts.values()),
+        "Goal Fatti": list(tf_fatti.values()),
+        "Goal Subiti": list(tf_subiti.values())
+    })
     tf_df["%"] = round((tf_df["Goal Segnati"] / tf_df["Goal Segnati"].sum()) * 100, 2)
     st.dataframe(tf_df)
 
@@ -130,6 +148,8 @@ def run_live_minute_analysis(df):
     over_stats_sq = {1.5: 0, 2.5: 0, 3.5: 0, 4.5: 0}
     final_scores_sq = []
     tf_counts_sq = {k:0 for k in tf_labels}
+    tf_fatti_sq = {k:0 for k in tf_labels}
+    tf_subiti_sq = {k:0 for k in tf_labels}
 
     for _, row in df_squadra.iterrows():
         home_goals = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
@@ -145,7 +165,18 @@ def run_live_minute_analysis(df):
             if total_goals > soglia:
                 over_stats_sq[soglia] += 1
 
-        for m in all_goals:
+        for m in home_goals:
+            for i, (a, b) in enumerate(tf_bands):
+                if a < m <= b:
+                    tf_counts_sq[tf_labels[i]] += 1
+                    tf_fatti_sq[tf_labels[i]] += 1
+                    break
+        for m in away_goals:
+            for i, (a, b) in enumerate(tf_bands):
+                if a < m <= b:
+                    tf_counts_sq[tf_labels[i]] += 1
+                    tf_subiti_sq[tf_labels[i]] += 1
+                    break
             for i, (a, b) in enumerate(tf_bands):
                 if a < m <= b:
                     tf_counts_sq[tf_labels[i]] += 1
@@ -165,7 +196,12 @@ def run_live_minute_analysis(df):
     st.dataframe(final_sq)
 
     st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
-    tf_df_sq = pd.DataFrame(list(tf_counts_sq.items()), columns=["Time Frame", "Goal Segnati"])
+    tf_df_sq = pd.DataFrame({
+        "Time Frame": list(tf_counts_sq.keys()),
+        "Goal Totali": list(tf_counts_sq.values()),
+        "Goal Fatti": list(tf_fatti_sq.values()),
+        "Goal Subiti": list(tf_subiti_sq.values())
+    })
     tf_df_sq["%"] = round((tf_df_sq["Goal Segnati"] / tf_df_sq["Goal Segnati"].sum()) * 100, 2)
     st.dataframe(tf_df_sq)
 
@@ -181,3 +217,5 @@ def run_live_minute_analysis(df):
     ax_sq.set_ylim(0, tf_df_sq["Goal Segnati"].max() + 2)
     ax_sq.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig_sq)
+
+
