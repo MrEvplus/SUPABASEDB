@@ -129,7 +129,7 @@ def run_live_minute_analysis(df):
 
     ax.set_title("Distribuzione Goal per Time Frame", fontsize=13)
     ax.set_ylabel("Goal Segnati")
-    ax.set_ylim(0, tf_df["Goal Segnati"].max() + 2)
+    ax.set_ylim(0, tf_df["Goal Totali"].max() + 2)
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig)
 
@@ -225,7 +225,7 @@ def run_live_minute_analysis(df):
 
     ax_sq.set_title("Distribuzione Goal per Time Frame - Squadra", fontsize=13)
     ax_sq.set_ylabel("Goal Segnati")
-    ax_sq.set_ylim(0, tf_df_sq["Goal Segnati"].max() + 2)
+    ax_sq.set_ylim(0, tf_df_sq["Goal Totali"].max() + 2)
     ax_sq.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig_sq)
 
@@ -238,6 +238,3 @@ def run_live_minute_analysis(df):
     ax3.set_ylabel("Goal Totali")
     ax3.legend()
     st.pyplot(fig3)
-
-
-
