@@ -15,6 +15,7 @@ from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
 from analisi_live_minuto import run_live_minute_analysis
+from partite_del_giorno import run_partite_del_giorno
 
 # -------------------------------------------------------
 # CONFIGURAZIONE PAGINA
@@ -23,13 +24,11 @@ st.set_page_config(
     page_title="Trading Dashboard",
     layout="wide"
 )
-
 st.sidebar.title("📊 Trading Dashboard")
 
 # -------------------------------------------------------
 # MENU PRINCIPALE
 # -------------------------------------------------------
-
 menu_option = st.sidebar.radio(
     "Naviga tra le sezioni:",
     [
@@ -45,12 +44,10 @@ menu_option = st.sidebar.radio(
 # -------------------------------------------------------
 # SELEZIONE ORIGINE DATI
 # -------------------------------------------------------
-
 origine_dati = st.sidebar.radio(
     "Seleziona origine dati:",
     ["Supabase", "Upload Manuale"]
 )
-
 if origine_dati == "Supabase":
     df, db_selected = load_data_from_supabase()
 else:
@@ -59,7 +56,6 @@ else:
 # -------------------------------------------------------
 # SESSION STATE PER SELEZIONE SQUADRE
 # -------------------------------------------------------
-
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
 if "squadra_ospite" not in st.session_state:
@@ -75,7 +71,6 @@ else:
 # -------------------------------------------------------
 # MAPPING COLONNE COMPLETO E PULIZIA
 # -------------------------------------------------------
-
 col_map = {
     "country": "country",
     "sezonul": "Stagione",
@@ -147,10 +142,8 @@ col_map = {
     "codechipa1": "CodeChipa1",
     "codechipa2": "CodeChipa2"
 }
-
 df.rename(columns=col_map, inplace=True)
 # Pulizia colonne
-
 df.columns = (
     df.columns
       .astype(str)
@@ -158,11 +151,9 @@ df.columns = (
       .str.replace(r"[\n\r\t]", "", regex=True)
       .str.replace(r"\s+", " ", regex=True)
 )
-
 # Crea colonna Label se non presente
 if "Label" not in df.columns:
     df["Label"] = df.apply(label_match, axis=1)
-
 # Filtro multi-stagione
 if "Stagione" in df.columns:
     stagioni_disponibili = sorted(df["Stagione"].dropna().unique())
@@ -173,94 +164,30 @@ if "Stagione" in df.columns:
     )
     if stagioni_scelte:
         df = df[df["Stagione"].isin(stagioni_scelte)]
-
 # Debug colonne
 with st.expander("✅ Colonne presenti nel dataset", expanded=False):
     st.write(list(df.columns))
-
 # Controllo colonna essenziale "Home"
 if "Home" not in df.columns:
     st.error("⚠️ La colonna 'Home' non esiste nel dataset selezionato.")
     st.stop()
-
 # Eventuale filtro sulla data
 if "Data" in df.columns:
     df["Data"] = pd.to_datetime(df["Data"], format="%Y-%m-%d", errors='coerce')
     today = pd.Timestamp.today().normalize()
     df = df[(df["Data"].isna()) | (df["Data"] <= today)]
-
 # -------------------------------------------------------
 # ESECUZIONE SEZIONI
 # -------------------------------------------------------
-
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
-
 elif menu_option == "Statistiche per Squadre":
     run_team_stats(df, db_selected)
-
 elif menu_option == "Confronto Pre Match":
     run_pre_match(df, db_selected)
-
 elif menu_option == "Correct Score EV":
     run_correct_score_ev(df, db_selected)
-
 elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)
-
 elif menu_option == "Partite del Giorno":
-    st.title("📅 Partite del Giorno - Upload File")
-    uploaded_file = st.file_uploader(
-        "Carica il file delle partite del giorno (CSV, XLSX, XLS):",
-        type=["csv", "xlsx", "xls"],
-        key="file_uploader_today"
-    )
-
-    if uploaded_file is not None:
-        # Lettura gestita in base all'estensione e fallback encoding
-        try:
-            if uploaded_file.name.lower().endswith(('.xls', '.xlsx')):
-                df_today = pd.read_excel(uploaded_file)
-            else:
-                try:
-                    df_today = pd.read_csv(uploaded_file)
-                except UnicodeDecodeError:
-                    uploaded_file.seek(0)
-                    df_today = pd.read_csv(uploaded_file, encoding='latin1')
-        except Exception as e:
-            st.error(f"Errore nel caricamento del file: {e}")
-            st.stop()
-
-        # Verifica colonne obbligatorie
-        if "Home" not in df_today.columns or "Away" not in df_today.columns:
-            st.error("⚠️ Il file deve contenere le colonne 'Home' e 'Away'.")
-        else:
-            df_today["match_str"] = df_today.apply(
-                lambda r: f"{r['Home']} vs {r['Away']}", axis=1
-            )
-            matches = df_today["match_str"].tolist()
-
-            selected = st.selectbox(
-                "Seleziona la partita:",
-                options=matches,
-                key="selected_match"
-            )
-
-            if selected:
-                casa, ospite = selected.split(" vs ")
-                st.session_state["squadra_casa"] = casa
-                st.session_state["squadra_ospite"] = ospite
-
-                st.markdown(f"### Statistiche per {casa} vs {ospite}")
-                run_macro_stats(df, db_selected)
-                run_team_stats(df, db_selected)
-                run_pre_match(df, db_selected)
-                run_correct_score_ev(df, db_selected)
-
-                if st.button("🔙 Torna indietro"):
-                    del st.session_state["selected_match"]
-                    st.session_state["squadra_casa"] = ""
-                    st.session_state["squadra_ospite"] = ""
-                    st.experimental_rerun()
-    else:
-        st.info("ℹ️ Carica un file per visualizzare le partite del giorno.")
+    run_partite_del_giorno(df, db_selected)
