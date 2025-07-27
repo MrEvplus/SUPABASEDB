@@ -152,7 +152,6 @@ def run_live_minute_analysis(df):
     ax2.set_title("Distribuzione Goal per Time Frame (Fatti + Subiti)")
     ax2.set_ylabel("Goal Totali")
     ax2.legend()
-    st.pyplot(fig2)
 
 
     # 👇 Partite della squadra selezionata
@@ -259,7 +258,4 @@ def run_live_minute_analysis(df):
     ax3.set_title("Distribuzione Goal Squadra per Time Frame (Fatti + Subiti)")
     ax3.set_ylabel("Goal Totali")
     ax3.legend()
-    st.pyplot(fig3)
-
-
 
