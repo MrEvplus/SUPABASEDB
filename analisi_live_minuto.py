@@ -117,7 +117,7 @@ def run_live_minute_analysis(df):
         "Goal Fatti": list(tf_fatti.values()),
         "Goal Subiti": list(tf_subiti.values())
     })
-    tf_df["%"] = round((tf_df["Goal Segnati"] / tf_df["Goal Segnati"].sum()) * 100, 2)
+    tf_df["%"] = round((tf_df["Goal Totali"] / tf_df["Goal Totali"].sum()) * 100, 2)
     st.dataframe(tf_df)
 
     # 📊 Grafico a barre con percentuali
@@ -132,6 +132,17 @@ def run_live_minute_analysis(df):
     ax.set_ylim(0, tf_df["Goal Segnati"].max() + 2)
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig)
+
+    # 📊 Grafico doppio Fatti/Subiti
+    fig2, ax2 = plt.subplots(figsize=(10, 5))
+    x = tf_df["Time Frame"]
+    ax2.bar(x, tf_df["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
+    ax2.bar(x, tf_df["Goal Subiti"], bottom=tf_df["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
+    ax2.set_title("Distribuzione Goal per Time Frame (Fatti + Subiti)")
+    ax2.set_ylabel("Goal Totali")
+    ax2.legend()
+    st.pyplot(fig2)
+
 
     # 👇 Partite della squadra selezionata
     st.markdown("### 📋 Partite storiche con stesso scenario")
@@ -202,7 +213,7 @@ def run_live_minute_analysis(df):
         "Goal Fatti": list(tf_fatti_sq.values()),
         "Goal Subiti": list(tf_subiti_sq.values())
     })
-    tf_df_sq["%"] = round((tf_df_sq["Goal Segnati"] / tf_df_sq["Goal Segnati"].sum()) * 100, 2)
+    tf_df_sq["%"] = round((tf_df_sq["Goal Totali"] / tf_df_sq["Goal Totali"].sum()) * 100, 2)
     st.dataframe(tf_df_sq)
 
     # 📊 Grafico a barre anche per la squadra selezionata
@@ -217,5 +228,16 @@ def run_live_minute_analysis(df):
     ax_sq.set_ylim(0, tf_df_sq["Goal Segnati"].max() + 2)
     ax_sq.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig_sq)
+
+    # 📊 Grafico doppio Fatti/Subiti - Squadra
+    fig3, ax3 = plt.subplots(figsize=(10, 5))
+    x_sq = tf_df_sq["Time Frame"]
+    ax3.bar(x_sq, tf_df_sq["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
+    ax3.bar(x_sq, tf_df_sq["Goal Subiti"], bottom=tf_df_sq["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
+    ax3.set_title("Distribuzione Goal Squadra per Time Frame (Fatti + Subiti)")
+    ax3.set_ylabel("Goal Totali")
+    ax3.legend()
+    st.pyplot(fig3)
+
 
 
