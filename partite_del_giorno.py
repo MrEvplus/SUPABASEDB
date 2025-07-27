@@ -20,22 +20,30 @@ def run_partite_del_giorno(df, db_selected):
     )
 
     if uploaded_file is not None:
-        # Lettura in base all'estensione con fallback encoding
+        # Lettura del file con gestione di vari formati e delimitatori
         try:
-            name = uploaded_file.name.lower()
-            if name.endswith(('.xls', '.xlsx')):
+            filename = uploaded_file.name.lower()
+            if filename.endswith(('.xls', '.xlsx')):
                 df_today = pd.read_excel(uploaded_file)
             else:
+                # Proviamo a interpretare il CSV
+                uploaded_file.seek(0)
                 try:
+                    # separatore comma
                     df_today = pd.read_csv(uploaded_file)
-                except UnicodeDecodeError:
+                except Exception:
+                    # separatore punto e virgola
                     uploaded_file.seek(0)
-                    df_today = pd.read_csv(uploaded_file, encoding='latin1')
+                    df_today = pd.read_csv(uploaded_file, sep=';', engine='python')
+        except UnicodeDecodeError:
+            # encoding differente
+            uploaded_file.seek(0)
+            df_today = pd.read_csv(uploaded_file, sep=';', encoding='latin1', engine='python')
         except Exception as e:
             st.error(f"Errore nel caricamento del file: {e}")
             st.stop()
 
-        # Fall-back colonne Home/Away se mancanti
+        # Se mancano le colonne Home/Away, tentiamo con codechipa1/codechipa2
         if "Home" not in df_today.columns or "Away" not in df_today.columns:
             if "codechipa1" in df_today.columns and "codechipa2" in df_today.columns:
                 df_today["Home"] = df_today["codechipa1"]
@@ -44,19 +52,12 @@ def run_partite_del_giorno(df, db_selected):
                 st.error("⚠️ Il file deve contenere le colonne 'Home' e 'Away', o in alternativa 'codechipa1' e 'codechipa2'.")
                 st.stop()
 
-        # Creazione lista partite
-        df_today["match_str"] = df_today.apply(
-            lambda r: f"{r['Home']} vs {r['Away']}",
-            axis=1
-        )
+        # Creiamo la lista delle partite
+        df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
         matches = df_today["match_str"].tolist()
 
-        # Selezione partita
-        selected = st.selectbox(
-            "Seleziona la partita:",
-            options=matches,
-            key="selected_match"
-        )
+        # Seleziona la partita
+        selected = st.selectbox("Seleziona la partita:", options=matches, key="selected_match")
 
         if selected:
             casa, ospite = selected.split(" vs ")
@@ -64,13 +65,12 @@ def run_partite_del_giorno(df, db_selected):
             st.session_state["squadra_ospite"] = ospite
 
             st.markdown(f"### Statistiche per {casa} vs {ospite}")
-            # Richiama le funzioni principali con le due squadre impostate
             run_macro_stats(df, db_selected)
             run_team_stats(df, db_selected)
             run_pre_match(df, db_selected)
             run_correct_score_ev(df, db_selected)
 
-            # Pulsante torni indietro
+            # Pulsante per tornare indietro
             if st.button("🔙 Torna indietro"):
                 del st.session_state["selected_match"]
                 st.session_state["squadra_casa"] = ""
