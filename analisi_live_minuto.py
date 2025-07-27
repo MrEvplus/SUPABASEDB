@@ -100,3 +100,13 @@ def run_live_minute_analysis(df):
     st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
     tf_df = pd.DataFrame(list(tf_counts.items()), columns=["Time Frame", "Goal Segnati"])
     st.dataframe(tf_df)
+
+
+    # 👇 Mostra le partite trovate con quel punteggio live al minuto selezionato
+    st.markdown("### 📋 Partite storiche con stesso scenario")
+    squadra_target = squadra_casa if label.startswith("H_") else squadra_ospite
+    df_squadra = df_matched[
+        (df_matched["Home"] == squadra_target) | (df_matched["Away"] == squadra_target)
+    ][["Stagione", "Home", "Away", "Home Goal FT", "Away Goal FT", "Label"]]
+    df_squadra["Risultato"] = df_squadra["Home Goal FT"].astype(str) + "-" + df_squadra["Away Goal FT"].astype(str)
+    st.dataframe(df_squadra.sort_values(by="Stagione", ascending=False).reset_index(drop=True))
