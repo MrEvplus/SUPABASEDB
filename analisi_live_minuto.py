@@ -27,10 +27,9 @@ def run_live_minute_analysis(df):
         return
 
     label = label_match({"Odd home": quota_home, "Odd Away": quota_away})
-    db_selected = st.session_state.get("campionato_corrente")
-
     st.markdown(f"🔖 **Label identificato:** `{label}`")
 
+    db_selected = st.session_state.get("campionato_corrente")
     if not db_selected:
         st.warning("⚠️ Nessun campionato selezionato.")
         return
@@ -59,7 +58,6 @@ def run_live_minute_analysis(df):
     df_matched = pd.DataFrame(matched_rows)
     st.success(f"✅ Trovate {len(df_matched)} partite con punteggio {goal_home_live}-{goal_away_live} al minuto {minuto_corrente}")
 
-    # Calcolo cosa è successo DOPO quel minuto
     goal_dopo = 0
     over_stats = {1.5: 0, 2.5: 0, 3.5: 0, 4.5: 0}
     final_scores = []
@@ -74,6 +72,7 @@ def run_live_minute_analysis(df):
         post_goals = [m for m in home_goals + away_goals if m > minuto_corrente]
         if post_goals:
             goal_dopo += 1
+
         for m in home_goals + away_goals:
             for a,b in tf_bands:
                 if a < m <= b:
@@ -84,6 +83,7 @@ def run_live_minute_analysis(df):
         for soglia in over_stats:
             if total_goals > soglia:
                 over_stats[soglia] += 1
+
         final_scores.append(f"{int(row['Home Goal FT'])}-{int(row['Away Goal FT'])}")
 
     st.markdown(f"📊 **% Partite con almeno 1 goal dopo il minuto {minuto_corrente}:** `{round(goal_dopo/len(df_matched)*100,2)}%`")
@@ -99,4 +99,4 @@ def run_live_minute_analysis(df):
 
     st.markdown("### ⏱️ Distribuzione Goal per Time Frame")
     tf_df = pd.DataFrame(list(tf_counts.items()), columns=["Time Frame", "Goal Segnati"])
-    st.dataframe(
+    st.dataframe(tf_df)
