@@ -146,8 +146,19 @@ def run_live_minute_analysis(df):
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     st.pyplot(fig)
 
-    # 📊 Grafico doppio Fatti/Subiti
-    fig2, ax2 = plt.subplots(figsize=(10, 5))
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fig2, ax2 = plt.subplots(figsize=(6, 4))
+        ax2.bar(tf_df["Time Frame"], tf_df["Goal Totali"], color="skyblue")
+        ax2.set_title("Distribuzione Goal per Time Frame")
+        st.pyplot(fig2)
+
+    with col2:
+        fig_sq, ax_sq = plt.subplots(figsize=(6, 4))
+        ax_sq.bar(tf_df_sq["Time Frame"], tf_df_sq["Goal Totali"], color="orange")
+        ax_sq.set_title("Distribuzione Goal Squadra per Time Frame")
+        st.pyplot(fig_sq)
     x = tf_df["Time Frame"]
     ax2.bar(x, tf_df["Goal Fatti"], label="Fatti", color='green', alpha=0.7)
     ax2.bar(x, tf_df["Goal Subiti"], bottom=tf_df["Goal Fatti"], label="Subiti", color='red', alpha=0.5)
@@ -270,3 +281,29 @@ def run_live_minute_analysis(df):
     ax3.set_ylabel("Goal Totali")
     ax3.legend()
 
+
+    # ✅ Statistiche Squadra Selezionata post-minuto e score live
+    st.subheader("📊 Statistiche Partite Squadra Selezionata (post-minuto selezionato)")
+    df_post = df_squadra[(df_squadra["Minuto"] == minuto) & 
+                         (df_squadra["Home Goal Live"] == goal_home_live) & 
+                         (df_squadra["Away Goal Live"] == goal_away_live)]
+
+    if df_post.empty:
+        st.warning("Nessuna partita trovata con lo stesso risultato/minuto.")
+    else:
+        df_post["Goal Totali FT"] = df_post["Home Goal FT"] + df_post["Away Goal FT"]
+        df_post["Goal Post"] = df_post["Goal Totali FT"] - (goal_home_live + goal_away_live)
+
+        over_stats = {}
+        for x in [0.5, 1.5, 2.5, 3.5, 4.5]:
+            over_stats[x] = round((df_post["Goal Post"] > x).sum() / len(df_post) * 100, 2)
+
+        st.markdown(f"📊 % Partite con almeno 1 goal dopo il minuto {minuto}: **{over_stats[0.5]}%**")
+        for x in over_stats:
+            st.markdown(f"📈 OVER {x}: **{over_stats[x]}%**")
+
+        # Risultati finali frequenti
+        freq_results = df_post.groupby(["Home Goal FT", "Away Goal FT"]).size().reset_index(name="Frequenza")
+        freq_results["Risultato"] = freq_results["Home Goal FT"].astype(str) + "-" + freq_results["Away Goal FT"].astype(str)
+        st.markdown("🧾 Risultati Finali più frequenti")
+        st.dataframe(freq_results[["Risultato", "Frequenza"]].sort_values("Frequenza", ascending=False).head(5))
