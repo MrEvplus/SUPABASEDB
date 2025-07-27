@@ -13,6 +13,7 @@ from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
 from analisi_live_minuto import run_live_minute_analysis  # NEW
+from streamlit_aggrid import AgGrid, GridOptionsBuilder
 
 
 
