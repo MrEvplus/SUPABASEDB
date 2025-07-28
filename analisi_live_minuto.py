@@ -12,7 +12,7 @@ def color_stat_rows(row):
         def color_pct(val):
             try:
                 v = float(val)
-                except:
+except Exception as e:
                     return ""
                     if v < 50:
                         return "background-color: red; color: black;"
@@ -55,7 +55,7 @@ def color_stat_rows(row):
                                                                             live_score = st.text_input("📟 Risultato live (es. 1-1)", "1-1", key="scorelive")
                                                                             try:
                                                                                 live_h, live_a = map(int, live_score.split("-"))
-                                                                                except:
+except Exception as e:
                                                                                     st.error("⚠️ Formato risultato non valido. Usa es. `1-1`.")
                                                                                     return
 
