@@ -208,8 +208,8 @@ def run_live_minute_analysis(df):
         ])
         st.dataframe(df_first.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
-    st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
-    # ⏱️ Tempo medio del primo goal post-minuto (Campionato)
+st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+# ⏱️ Tempo medio del primo goal post-minuto (Campionato)
     with left:
         st.markdown("### ⏱️ Tempo medio al primo goal (Campionato)")
         goal_minutes = []
