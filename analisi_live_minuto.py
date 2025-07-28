@@ -3,24 +3,24 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from utils import label_match, extract_minutes
 
-def color_pct(v):
+def color_pct(val):
     """
-    Restituisce lo stile CSS per il valore percentuale:
-    - verde per >=70%
-    - giallo per 50-69%
-    - rosso per <50%
+    Colora le celle percentuali:
+      - rosso se <50
+      - giallo se 50–69
+      - verde se ≥70
     """
     try:
-        pct = float(v)
+        v = float(val)
     except:
         return ""
-    if pct >= 70:
-        color = "#28a745"  # verde
-    elif pct >= 50:
-        color = "#ffc107"  # giallo
+    if v < 50:
+        color = "red"
+    elif v < 70:
+        color = "yellow"
     else:
-        color = "#ff4d4d"  # rosso
-    return f"background-color: {color}; color: white;"
+        color = "green"
+    return f"background-color: {color}; color: black;"
 
 def run_live_minute_analysis(df):
     st.set_page_config(page_title="Analisi Live Minuto", layout="wide")
@@ -29,17 +29,13 @@ def run_live_minute_analysis(df):
     # --- Selezione squadre ---
     col1, col2 = st.columns(2)
     with col1:
-        home_team = st.selectbox(
-            "🏠 Squadra in casa",
-            sorted(df["Home"].dropna().unique()),
-            key="home_live"
-        )
+        home_team = st.selectbox("🏠 Squadra in casa",
+                                 sorted(df["Home"].dropna().unique()),
+                                 key="home_live")
     with col2:
-        away_team = st.selectbox(
-            "🚪 Squadra in trasferta",
-            sorted(df["Away"].dropna().unique()),
-            key="away_live"
-        )
+        away_team = st.selectbox("🚪 Squadra in trasferta",
+                                 sorted(df["Away"].dropna().unique()),
+                                 key="away_live")
 
     # --- Inserimento quote ---
     c1, c2, c3 = st.columns(3)
@@ -62,7 +58,6 @@ def run_live_minute_analysis(df):
     # --- Label e filtraggio campionato+label ---
     label = label_match({"Odd home": odd_home, "Odd Away": odd_away})
     st.markdown(f"🔖 **Label:** `{label}`")
-
     champ = st.session_state.get("campionato_corrente", df["country"].iloc[0])
     df["Label"] = df.apply(label_match, axis=1)
     df_league = df[(df["country"] == champ) & (df["Label"] == label)]
@@ -86,18 +81,69 @@ def run_live_minute_analysis(df):
     with st.expander("📑 Partite campionato considerate per l'analisi"):
         if not df_matched.empty:
             st.dataframe(
-                df_matched[
-                    ["Stagione", "Data", "Home", "Away",
-                     "Home Goal FT", "Away Goal FT",
-                     "minuti goal segnato home",
-                     "minuti goal segnato away"]
-                ]
+                df_matched[["Stagione", "Data", "Home", "Away",
+                            "Home Goal FT", "Away Goal FT",
+                            "minuti goal segnato home",
+                            "minuti goal segnato away"]]
                 .sort_values(["Stagione", "Data"], ascending=[False, False])
                 .reset_index(drop=True),
                 use_container_width=True
             )
         else:
             st.write("Nessuna partita da mostrare.")
+
+    # --- Calcolo statistiche Campionato (Home vs Opp) ---
+    home_w = (df_league["Home Goal FT"] > df_league["Away Goal FT"]).mean() * 100
+    draw = (df_league["Home Goal FT"] == df_league["Away Goal FT"]).mean() * 100
+    opp_w = (df_league["Home Goal FT"] < df_league["Away Goal FT"]).mean() * 100
+    matches = len(df_league)
+    stats_league = pd.DataFrame({
+        "Home Teams": [matches, home_w, draw, opp_w],
+        "Away Teams": [matches, opp_w, draw, home_w],
+    }, index=["Matches", "Win %", "Draw %", "Loss %"])
+    # Styling
+    styled_league = stats_league.style \
+        .format("{:.2f}") \
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %", "Draw %", "Loss %"], :]) \
+        .set_properties(**{"text-align": "center"}) \
+        .set_table_styles([{"selector": "th", "props": [("text-align", "center")]}])
+
+    # --- Calcolo statistiche Squadra selezionata ---
+    df_team = df_matched[(df_matched["Home"] == home_team) | (df_matched["Away"] == home_team)] \
+        if label.startswith("H_") else \
+              df_matched[(df_matched["Home"] == away_team) | (df_matched["Away"] == away_team)]
+    t_w = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
+    t_draw = (df_team["Home Goal FT"] == df_team["Away Goal FT"]).mean() * 100
+    t_opp_w = (df_team["Home Goal FT"] < df_team["Away Goal FT"]).mean() * 100
+    t_matches = len(df_team)
+    stats_team = pd.DataFrame({
+        home_team if label.startswith("H_") else away_team: [t_matches, t_w, t_draw, t_opp_w],
+        "Opponents": [t_matches, t_opp_w, t_draw, t_w],
+    }, index=["Matches", "Win %", "Draw %", "Loss %"])
+    styled_team = stats_team.style \
+        .format("{:.2f}") \
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %", "Draw %", "Loss %"], :]) \
+        .set_properties(**{"text-align": "center"}) \
+        .set_table_styles([{"selector": "th", "props": [("text-align", "center")]}])
+
+    # --- Visualizzazione affiancata ---
+    st.subheader("📊 Statistiche Campionato")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Home Teams**")
+        st.dataframe(styled_league, use_container_width=True)
+    with c2:
+        st.markdown("**Away Teams**")
+        st.dataframe(styled_league, use_container_width=True)
+
+    st.subheader(f"📊 Statistiche Squadra - {home_team if label.startswith('H_') else away_team}")
+    c3, c4 = st.columns(2)
+    with c3:
+        st.markdown(f"**{home_team if label.startswith('H_') else away_team}**")
+        st.dataframe(styled_team, use_container_width=True)
+    with c4:
+        st.markdown("**Opponents**")
+        st.dataframe(styled_team, use_container_width=True)
 
     # --- OVER dal minuto live (Campionato) ---
     st.subheader("📊 OVER dal minuto live (Campionato)")
