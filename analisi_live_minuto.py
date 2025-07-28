@@ -95,87 +95,89 @@ def run_live_minute_analysis(df):
         else:
             st.write("Nessuna partita da mostrare.")
 
-    # --- Calcolo statistiche Campionato ---
+    # --- Statistiche Campionato ---
     matches = len(df_league)
     home_w = (df_league["Home Goal FT"] > df_league["Away Goal FT"]).mean() * 100
-    draw = (df_league["Home Goal FT"] == df_league["Away Goal FT"]).mean() * 100
+    draw  = (df_league["Home Goal FT"] == df_league["Away Goal FT"]).mean() * 100
     opp_w = (df_league["Home Goal FT"] < df_league["Away Goal FT"]).mean() * 100
+
     stats_league = pd.DataFrame({
-        "Home Teams": [matches, home_w, draw, opp_w],
-        "Away Teams": [matches, opp_w, draw, home_w],
+        "Home Teams":   [matches, home_w, draw, opp_w],
+        "Away Teams":   [matches, opp_w, draw, home_w],
     }, index=["Matches", "Win %", "Draw %", "Loss %"])
 
-    # split in due DataFrame
-    df_league_home = stats_league[["Home Teams"]]
-    df_league_away = stats_league[["Away Teams"]]
+    # Styles
     styled_league_home = (
-        df_league_home.style
+        stats_league[["Home Teams"]]
+        .style
         .format("{:.2f}")
-        .applymap(color_pct, subset=pd.IndexSlice[["Win %", "Draw %", "Loss %"], :])
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %","Draw %","Loss %"], :])
         .set_properties(**{"text-align": "center"})
         .set_table_styles([{"selector": "th","props":[("text-align","center")]}])
     )
     styled_league_away = (
-        df_league_away.style
+        stats_league[["Away Teams"]]
+        .style
         .format("{:.2f}")
-        .applymap(color_pct, subset=pd.IndexSlice[["Win %", "Draw %", "Loss %"], :])
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %","Draw %","Loss %"], :])
         .set_properties(**{"text-align": "center"})
         .set_table_styles([{"selector": "th","props":[("text-align","center")]}])
     )
 
-    # --- Calcolo statistiche Squadra selezionata ---
+    # --- Statistiche Squadra ---
     team = home_team if label.startswith("H_") else away_team
     df_team = df_matched[(df_matched["Home"] == team) | (df_matched["Away"] == team)]
     t_matches = len(df_team)
+
     if t_matches > 0:
         if label.startswith("H_"):
-            t_w = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
+            t_w     = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
             t_opp_w = (df_team["Home Goal FT"] < df_team["Away Goal FT"]).mean() * 100
         else:
-            t_w = (df_team["Away Goal FT"] > df_team["Home Goal FT"]).mean() * 100
+            t_w     = (df_team["Away Goal FT"] > df_team["Home Goal FT"]).mean() * 100
             t_opp_w = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
         t_draw = (df_team["Home Goal FT"] == df_team["Away Goal FT"]).mean() * 100
     else:
         t_w = t_draw = t_opp_w = 0.0
 
     stats_team = pd.DataFrame({
-        team: [t_matches, t_w, t_draw, t_opp_w],
-        "Opponents": [t_matches, t_opp_w, t_draw, t_w],
+        team:       [t_matches, t_w, t_draw, t_opp_w],
+        "Opponents":[t_matches, t_opp_w, t_draw, t_w],
     }, index=["Matches", "Win %", "Draw %", "Loss %"])
 
-    df_team_home = stats_team[[team]]
-    df_team_away = stats_team[["Opponents"]]
     styled_team_home = (
-        df_team_home.style
+        stats_team[[team]]
+        .style
         .format("{:.2f}")
-        .applymap(color_pct, subset=pd.IndexSlice[["Win %", "Draw %", "Loss %"], :])
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %","Draw %","Loss %"], :])
         .set_properties(**{"text-align": "center"})
         .set_table_styles([{"selector": "th","props":[("text-align","center")]}])
     )
     styled_team_away = (
-        df_team_away.style
+        stats_team[["Opponents"]]
+        .style
         .format("{:.2f}")
-        .applymap(color_pct, subset=pd.IndexSlice[["Win %", "Draw %", "Loss %"], :])
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %","Draw %","Loss %"], :])
         .set_properties(**{"text-align": "center"})
         .set_table_styles([{"selector": "th","props":[("text-align","center")]}])
     )
 
-    # --- Visualizzazione affiancata delle tabelle ---
+    # --- Layout finale ---
     st.subheader("📊 Statistiche Campionato")
-    colA, colB = st.columns(2)
-    with colA:
+    c1, c2 = st.columns(2)
+    with c1:
         st.markdown("**Home Teams**")
         st.dataframe(styled_league_home, use_container_width=True)
-    with colB:
+    with c2:
         st.markdown("**Away Teams**")
         st.dataframe(styled_league_away, use_container_width=True)
 
     st.subheader(f"📊 Statistiche Squadra - {team}")
-    colC, colD = st.columns(2)
-    with colC:
+    c3, c4 = st.columns(2)
+    with c3:
         st.markdown(f"**{team}**")
         st.dataframe(styled_team_home, use_container_width=True)
-    with colD:
+    with c4:
         st.markdown("**Opponents**")
         st.dataframe(styled_team_away, use_container_width=True)
 
