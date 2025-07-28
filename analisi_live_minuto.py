@@ -60,7 +60,6 @@ def run_live_minute_analysis(df):
         return
 
     label = label_match({"Odd home": odd_home, "Odd Away": odd_away})
-    st.markdown(f"📌 Analisi live per il minuto **{current_min}'** e risultato **{score_label}**")
     st.markdown(f"🔖 **Label:** `{label}`")
     champ = st.session_state.get("campionato_corrente", df["country"].iloc[0])
     df["Label"] = df.apply(label_match, axis=1)
