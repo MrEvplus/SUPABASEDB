@@ -8,9 +8,9 @@ def color_pct(val):
         v = float(val)
     except:
         return ""
-    if v < 50:
+    if v < 50%:
         return "background-color: red; color: black;"
-    elif v < 70:
+    elif v < 70%:
         return "background-color: yellow; color: black;"
     else:
         return "background-color: green; color: black;"
