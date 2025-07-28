@@ -5,12 +5,6 @@ from utils import label_match, extract_minutes
 
 
 def color_pct(val):
-    """
-    Colora le celle percentuali:
-      - rosso se <50
-      - giallo se 50–69
-      - verde se ≥70
-    """
     try:
         v = float(val)
     except:
@@ -98,11 +92,11 @@ def run_live_minute_analysis(df):
         else:
             st.write("Nessuna partita da mostrare.")
 
-    # --- Statistiche Campionato ---
-    matches = len(df_league)
-    home_w = (df_league["Home Goal FT"] > df_league["Away Goal FT"]).mean() * 100
-    draw  = (df_league["Home Goal FT"] == df_league["Away Goal FT"]).mean() * 100
-    opp_w = (df_league["Home Goal FT"] < df_league["Away Goal FT"]).mean() * 100
+    # --- Statistiche Campionato (filtrate sul minuto e risultato live) ---
+    matches = len(df_matched)
+    home_w = (df_matched["Home Goal FT"] > df_matched["Away Goal FT"]).mean() * 100
+    draw  = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
+    opp_w = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
 
     stats_league = pd.DataFrame({
         "Home Teams":   [matches, home_w, draw, opp_w],
@@ -235,5 +229,3 @@ def run_live_minute_analysis(df):
         .set_table_styles([{"selector": "th", "props": [("text-align", "center")] }])
     )
     st.dataframe(styled_tf, use_container_width=True)
-
-    
