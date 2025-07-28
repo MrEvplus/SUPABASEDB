@@ -238,7 +238,7 @@ def run_live_minute_analysis(df):
 
     # Grafico intervalli Campionato
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(df_flutter_tf.index, df_tf["Fatti"], color="#1f77b4", label="Fatti", alpha=0.8)
+    ax.bar(df_tf["Intervallo"], df_tf["Fatti"], color="#1f77b4", label="Fatti", alpha=0.8)
     ax.bar(df_tf.index, df_tf["Subiti"], bottom=df_tf["Fatti"], color="#ff7f0e", label="Subiti", alpha=0.8)
     for i, row in df_tf.iterrows():
         ax.text(i, row.Totale + 0.3, f'{row.Totale} ({row["% Totale"]}%)', ha="center", va="bottom", color="black", fontweight="bold")
