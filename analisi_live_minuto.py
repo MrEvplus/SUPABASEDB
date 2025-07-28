@@ -173,28 +173,3 @@ def run_live_minute_analysis(df):
         tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
         st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
-# 📊 COSA ACCADE DOPO - CAMPIONATO
-st.markdown(f"📊 Cosa accade dopo il minuto {current_min}' e risultato {score_label} - Campionato")
-after_df_camp = campionato_df[
-    (campionato_df['minute'] >= current_min) & (campionato_df['label'] == score_label)
-]
-
-if not after_df_camp.empty:
-    after_df_camp['next_goal'] = after_df_camp['scor1'].astype(str) + '-' + after_df_camp['scor2'].astype(str)
-    goal_distribution = after_df_camp['next_goal'].value_counts(normalize=True).reset_index()
-    goal_distribution.columns = ['Prossimo Goal', '%']
-    goal_distribution['%'] = (goal_distribution['%'] * 100).round(2)
-    st.dataframe(goal_distribution)
-
-# 📊 COSA ACCADE DOPO - SQUADRA
-st.markdown(f"📊 Cosa accade dopo il minuto {current_min}' e risultato {score_label} - Squadra ({selected_home_team})")
-after_df_team = df_team[
-    (df_team['minute'] >= current_min) & (df_team['label'] == score_label)
-]
-
-if not after_df_team.empty:
-    after_df_team['next_goal'] = after_df_team['scor1'].astype(str) + '-' + after_df_team['scor2'].astype(str)
-    goal_distribution_team = after_df_team['next_goal'].value_counts(normalize=True).reset_index()
-    goal_distribution_team.columns = ['Prossimo Goal', '%']
-    goal_distribution_team['%'] = (goal_distribution_team['%'] * 100).round(2)
-    st.dataframe(goal_distribution_team)
