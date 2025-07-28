@@ -145,7 +145,6 @@ with right:
             st.markdown(f"**{perspective} - {team}**")
             st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
     else:
-with right:
         st.markdown(f"### 📊 Statistiche Squadra - {team}")
         t_matches = len(df_team)
         if label.startswith("H_"):
