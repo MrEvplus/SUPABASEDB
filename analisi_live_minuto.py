@@ -306,6 +306,3 @@ def run_live_minute_analysis(df):
             st.info("ℹ️ Nessun EV positivo trovato.")
     else:
         st.info("ℹ️ Quote OVER non disponibili per EV.")
-
-# Chiamata pagina
-run_live_minute_analysis(df)
