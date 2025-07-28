@@ -113,7 +113,7 @@ def run_live_minute_analysis(df):
         stats_league[["Home Teams"]]
         .style
         .format("{:.2f}")
-        .applymap(color_pct, subset=pd.IndexSlice[["Win %","Draw %,","Loss %"], :])
+        .applymap(color_pct, subset=pd.IndexSlice[["Win %","Draw %","Loss %"], :])
         .set_properties(**{"text-align": "center"})
         .set_table_styles([{"selector": "th","props":[("text-align","center")]}])
     )
