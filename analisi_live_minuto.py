@@ -16,6 +16,27 @@ def color_pct(val):
         return "background-color: green; color: black;"
 
 def color_stat_rows(row):
+    styles = []
+    for col, val in row.items():
+        if row.name == "Matches":
+            styles.append("font-weight: bold; color: black; background-color: transparent")
+        elif isinstance(val, float) and ("%" in col or row.name.endswith("%")):
+            styles.append(color_pct(val))
+        else:
+            styles.append("")
+    return styles
+    try:
+        v = float(val)
+    except:
+        return ""
+    if v < 50:
+        return "background-color: red; color: black;"
+    elif v < 70:
+        return "background-color: yellow; color: black;"
+    else:
+        return "background-color: green; color: black;"
+
+def color_stat_rows(row):
     if row.name == "Matches":
         return ["font-weight: bold; color: black; background-color: transparent"] * len(row)
     return [color_pct(v) for v in row]
@@ -88,7 +109,7 @@ def run_live_minute_analysis(df):
         draw = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
         loss = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
         df_league_stats = pd.DataFrame({"Campionato": [matches, home_w, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
-        st.dataframe(df_league_stats.style.format("{:.2f}").applymap(color_pct), use_container_width=True)
+        st.dataframe(df_league_stats.style.format("{:.2f}").apply(color_stat_rows, axis=0), use_container_width=True)
 
         st.markdown("### 📈 OVER dal minuto live (Campionato)")
         extra_goals = (df_matched["Home Goal FT"] + df_matched["Away Goal FT"] - (live_h + live_a)).fillna(0)
@@ -99,7 +120,7 @@ def run_live_minute_analysis(df):
         freq = df_matched["Home Goal FT"].astype(str) + "-" + df_matched["Away Goal FT"].astype(str)
         freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
         freq_df["%"] = (freq_df["Occorrenze"] / len(df_matched) * 100).round(2)
-        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).applymap(color_pct), use_container_width=True)
+        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=0), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
         tf_data = {lbl: 0 for lbl in tf_labels}
@@ -111,7 +132,7 @@ def run_live_minute_analysis(df):
                             tf_data[lbl] += 1
         total = sum(tf_data.values())
         tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).applymap(color_pct), use_container_width=True)
+        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=0), use_container_width=True)
 
     with right:
         st.markdown(f"### 📊 Statistiche Squadra - {team}")
@@ -125,7 +146,7 @@ def run_live_minute_analysis(df):
             draw = (df_team["Away Goal FT"] == df_team["Home Goal FT"]).mean() * 100
             loss = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
         df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
-        st.dataframe(df_team_stats.style.format("{:.2f}").applymap(color_pct), use_container_width=True)
+        st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=0), use_container_width=True)
 
         st.markdown("### 📈 OVER dal minuto live (Squadra)")
         extra_goals = (df_team["Home Goal FT"] + df_team["Away Goal FT"] - (live_h + live_a)).fillna(0)
@@ -136,7 +157,7 @@ def run_live_minute_analysis(df):
         freq = df_team["Home Goal FT"].astype(str) + "-" + df_team["Away Goal FT"].astype(str)
         freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
         freq_df["%"] = (freq_df["Occorrenze"] / len(df_team) * 100).round(2)
-        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).applymap(color_pct), use_container_width=True)
+        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=0), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Squadra)")
         tf_data = {lbl: 0 for lbl in tf_labels}
@@ -148,4 +169,4 @@ def run_live_minute_analysis(df):
                             tf_data[lbl] += 1
         total = sum(tf_data.values())
         tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).applymap(color_pct), use_container_width=True)
+        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=0), use_container_width=True)
