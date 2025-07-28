@@ -87,7 +87,17 @@ def run_live_minute_analysis(df):
             )
 
     team = home_team if label.startswith("H_") else away_team
-    df_team = df_matched[(df_matched["Home"] == team) | (df_matched["Away"] == team)]
+    matched_team = []
+    for _, r in df_league.iterrows():
+        if r["Home"] != team and r["Away"] != team:
+            continue
+        mh = extract_minutes(pd.Series([r.get("minuti goal segnato home", "")]))
+        ma = extract_minutes(pd.Series([r.get("minuti goal segnato away", "")]))
+        gh = sum(m <= current_min for m in mh)
+        ga = sum(m <= current_min for m in ma)
+        if gh == live_h and ga == live_a:
+            matched_team.append(r)
+    df_team = pd.DataFrame(matched_team)
 
     tf_bands = [(0, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 90)]
     tf_labels = [f"{a}-{b}" for a, b in tf_bands]
