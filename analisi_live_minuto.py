@@ -1,4 +1,4 @@
-mport streamlit as st
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from utils import label_match, extract_minutes
@@ -126,7 +126,26 @@ def run_live_minute_analysis(df):
         tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
         st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
-    with right:
+    
+with right:
+    if label == "SuperCompetitive H<=3 A<=3":
+        st.markdown("### 📊 Statistiche Squadre SuperCompetitive (Home vs Away)")
+        for team, perspective in [(home_team, "Home"), (away_team, "Away")]:
+            df_team = df_matched[(df_matched["Home"] == team) | (df_matched["Away"] == team)]
+            t_matches = len(df_team)
+            if perspective == "Home":
+                win = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
+                draw = (df_team["Home Goal FT"] == df_team["Away Goal FT"]).mean() * 100
+                loss = (df_team["Home Goal FT"] < df_team["Away Goal FT"]).mean() * 100
+            else:
+                win = (df_team["Away Goal FT"] > df_team["Home Goal FT"]).mean() * 100
+                draw = (df_team["Away Goal FT"] == df_team["Home Goal FT"]).mean() * 100
+                loss = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
+            df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
+            st.markdown(f"**{perspective} - {team}**")
+            st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
+    else:
+with right:
         st.markdown(f"### 📊 Statistiche Squadra - {team}")
         t_matches = len(df_team)
         if label.startswith("H_"):
