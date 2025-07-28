@@ -122,11 +122,12 @@ def run_live_minute_analysis(df):
                     for lbl, (a, b) in zip(tf_labels, tf_bands):
                         if a < val <= b:
                             tf_data[lbl] += 1
-        total = sum(tf_data.values())
-        tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
+        total_matches = len(df_matched)
+        tf_df = pd.DataFrame([
+            {"Intervallo": k, "Goal": v, "%": v / total_matches * 100 if total_matches else 0}
+            for k, v in tf_data.items()
+        ])
         st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
-
-    with right:
         st.markdown(f"### 📊 Statistiche Squadra - {team}")
         t_matches = len(df_team)
         if label.startswith("H_"):
