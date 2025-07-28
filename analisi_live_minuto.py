@@ -15,6 +15,11 @@ def color_pct(val):
     else:
         return "background-color: green; color: black;"
 
+def color_stat_rows(row):
+    if row.name == "Matches":
+        return ["font-weight: bold; color: black; background-color: transparent"] * len(row)
+    return [color_pct(v) for v in row]
+
 def run_live_minute_analysis(df):
     st.set_page_config(page_title="Analisi Live Minuto", layout="wide")
     st.title("⏱️ Analisi Live - Cosa succede da questo minuto?")
