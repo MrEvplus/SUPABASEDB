@@ -14,7 +14,7 @@ from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
-from analisi_live_minuto import run_live_minute_analysis
+from analisi_live_minuto_finale import run_live_minute_analysis
 from partite_del_giorno import run_partite_del_giorno
 
 # -------------------------------------------------------
