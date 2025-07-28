@@ -114,21 +114,21 @@ def run_live_minute_analysis(df):
         freq_df["%"] = (freq_df["Occorrenze"] / len(df_matched) * 100).round(2)
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
-        with left:
-            st.markdown("### ⏱️ Goal post-minuto (Campionato)")
-            tf_data = {lbl: 0 for lbl in tf_labels}
-            for _, row in df_matched.iterrows():
-                for val in extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]])):
-                    if val > current_min:
-                        for lbl, (a, b) in zip(tf_labels, tf_bands):
-                            if a < val <= b:
-                                tf_data[lbl] += 1
-            total_matches = len(df_matched)
-            tf_df = pd.DataFrame([
-                {"Intervallo": k, "Goal": v, "%": v / total_matches * 100 if total_matches else 0}
-                for k, v in tf_data.items()
-            ])
-            st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+st.markdown("### ⏱️ Goal post-minuto (Campionato)")
+        tf_data = {lbl: 0 for lbl in tf_labels}
+        for _, row in df_matched.iterrows():
+            for val in extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]])):
+                if val > current_min:
+                    for lbl, (a, b) in zip(tf_labels, tf_bands):
+                        if a < val <= b:
+                            tf_data[lbl] += 1
+        total_matches = len(df_matched)
+        tf_df = pd.DataFrame([
+            {"Intervallo": k, "Goal": v, "%": v / total_matches * 100 if total_matches else 0}
+            for k, v in tf_data.items()
+        ])
+        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        st.markdown(f"### 📊 Statistiche Squadra - {team}")
         t_matches = len(df_team)
         if label.startswith("H_"):
             win = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
