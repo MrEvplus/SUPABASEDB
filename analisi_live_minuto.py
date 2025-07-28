@@ -3,6 +3,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from utils import label_match, extract_minutes
 
+def color_pct(v):
+    """
+    Restituisce lo stile CSS per il valore percentuale:
+    - verde per >=70%
+    - giallo per 50-69%
+    - rosso per <50%
+    """
+    try:
+        pct = float(v)
+    except:
+        return ""
+    if pct >= 70:
+        color = "#28a745"  # verde
+    elif pct >= 50:
+        color = "#ffc107"  # giallo
+    else:
+        color = "#ff4d4d"  # rosso
+    return f"background-color: {color}; color: white;"
+
 def run_live_minute_analysis(df):
     st.set_page_config(page_title="Analisi Live Minuto", layout="wide")
     st.title("⏱️ Analisi Live - Cosa succede da questo minuto?")
@@ -25,25 +44,15 @@ def run_live_minute_analysis(df):
     # --- Inserimento quote ---
     c1, c2, c3 = st.columns(3)
     with c1:
-        odd_home = st.number_input(
-            "📈 Quota Home", 1.01, 10.0, 2.00, key="odd_h"
-        )
+        odd_home = st.number_input("📈 Quota Home", 1.01, 10.0, 2.00, key="odd_h")
     with c2:
-        odd_draw = st.number_input(
-            "⚖️ Quota Pareggio", 1.01, 10.0, 3.20, key="odd_d"
-        )
+        odd_draw = st.number_input("⚖️ Quota Pareggio", 1.01, 10.0, 3.20, key="odd_d")
     with c3:
-        odd_away = st.number_input(
-            "📉 Quota Away", 1.01, 10.0, 3.80, key="odd_a"
-        )
+        odd_away = st.number_input("📉 Quota Away", 1.01, 10.0, 3.80, key="odd_a")
 
     # --- Minuto e punteggio live ---
-    current_min = st.slider(
-        "⏲️ Minuto attuale", 1, 120, 45, key="minlive"
-    )
-    live_score = st.text_input(
-        "📟 Risultato live (es. 1-1)", "1-1", key="scorelive"
-    )
+    current_min = st.slider("⏲️ Minuto attuale", 1, 120, 45, key="minlive")
+    live_score = st.text_input("📟 Risultato live (es. 1-1)", "1-1", key="scorelive")
     try:
         live_h, live_a = map(int, live_score.split("-"))
     except:
@@ -121,9 +130,8 @@ def run_live_minute_analysis(df):
         freq_df.style
         .format({"%": "{:.2f}%"})
         .set_properties(**{"text-align": "center"})
-        .set_table_styles([
-            {"selector": "th", "props": [("text-align", "center")]}
-        ]),
+        .applymap(color_pct, subset=["%"])
+        .set_table_styles([{"selector": "th", "props": [("text-align", "center")]}]),
         use_container_width=True
     )
 
@@ -153,28 +161,21 @@ def run_live_minute_analysis(df):
         for lbl in tf_labels
     ])
     df_tf["Totale"] = df_tf["Fatti"] + df_tf["Subiti"]
-    df_tf["% Totale"] = (
-        df_tf["Totale"] / df_tf["Totale"].sum() * 100
-    ).round(2)
+    df_tf["% Totale"] = (df_tf["Totale"] / df_tf["Totale"].sum() * 100).round(2)
     st.dataframe(
         df_tf.style
         .format({"% Totale": "{:.2f}%"})
         .set_properties(**{"text-align": "center"})
-        .set_table_styles([
-            {"selector": "th", "props": [("text-align", "center")]}
-        ]),
+        .applymap(color_pct, subset=["% Totale"])
+        .set_table_styles([{"selector": "th", "props": [("text-align", "center")]}]),
         use_container_width=True
     )
 
     # Grafico intervalli Campionato
     fig, ax = plt.subplots(figsize=(8, 4))
-    fig.patch.set_facecolor("white")
-    ax.set_facecolor("white")
-    ax.bar(df_tf["Intervallo"], df_tf["Fatti"],
-           color="#1f77b4", label="Fatti", alpha=0.8)
-    ax.bar(df_tf["Intervallo"], df_tf["Subiti"],
-           bottom=df_tf["Fatti"], color="#ff7f0e",
-           label="Subiti", alpha=0.8)
+    ax.bar(df_tf["Intervallo"], df_tf["Fatti"], color="#1f77b4", label="Fatti", alpha=0.8)
+    ax.bar(df_tf["Intervallo"], df_tf["Subiti"], bottom=df_tf["Fatti"],
+           color="#ff7f0e", label="Subiti", alpha=0.8)
     for i, row in df_tf.iterrows():
         ax.text(i, row.Totale + 0.3,
                 f'{row.Totale} ({row["% Totale"]}%)',
@@ -233,9 +234,8 @@ def run_live_minute_analysis(df):
         freq_df_t.style
         .format({"%": "{:.2f}%"})
         .set_properties(**{"text-align": "center"})
-        .set_table_styles([
-            {"selector": "th", "props": [("text-align", "center")]}
-        ]),
+        .applymap(color_pct, subset=["%"])
+        .set_table_styles([{"selector": "th", "props": [("text-align", "center")]}]),
         use_container_width=True
     )
 
@@ -258,9 +258,7 @@ def run_live_minute_analysis(df):
                         tf_subiti_t[lbl] += 1
                         break
     df_t = pd.DataFrame([
-        {"Intervallo": lbl,
-         "Fatti": tf_fatti_t[lbl],
-         "Subiti": tf_subiti_t[lbl]}
+        {"Intervallo": lbl, "Fatti": tf_fatti_t[lbl], "Subiti": tf_subiti_t[lbl]}
         for lbl in tf_labels
     ])
     df_t["Totale"] = df_t["Fatti"] + df_t["Subiti"]
@@ -271,20 +269,15 @@ def run_live_minute_analysis(df):
         df_t.style
         .format({"% Totale": "{:.2f}%"})
         .set_properties(**{"text-align": "center"})
-        .set_table_styles([
-            {"selector": "th", "props": [("text-align", "center")]}
-        ]),
+        .applymap(color_pct, subset=["% Totale"])
+        .set_table_styles([{"selector": "th", "props": [("text-align", "center")]}]),
         use_container_width=True
     )
 
     fig2, ax2 = plt.subplots(figsize=(8, 4))
-    fig2.patch.set_facecolor("white")
-    ax2.set_facecolor("white")
-    ax2.bar(df_t["Intervallo"], df_t["Fatti"],
-            color="#1f77b4", label="Fatti", alpha=0.8)
-    ax2.bar(df_t["Intervallo"], df_t["Subiti"],
-            bottom=df_t["Fatti"], color="#ff7f0e",
-            label="Subiti", alpha=0.8)
+    ax2.bar(df_t["Intervallo"], df_t["Fatti"], color="#1f77b4", label="Fatti", alpha=0.8)
+    ax2.bar(df_t["Intervallo"], df_t["Subiti"], bottom=df_t["Fatti"],
+            color="#ff7f0e", label="Subiti", alpha=0.8)
     for i, row in df_t.iterrows():
         ax2.text(i, row.Totale + 0.3,
                  f'{row.Totale} ({row["% Totale"]}%)',
@@ -294,7 +287,6 @@ def run_live_minute_analysis(df):
     ax2.set_ylabel("N° goal")
     ax2.legend()
     ax2.grid(axis="y", linestyle="--", alpha=0.3)
-
     st.pyplot(fig2)
 
     st.markdown("---")
@@ -314,3 +306,6 @@ def run_live_minute_analysis(df):
             st.info("ℹ️ Nessun EV positivo trovato.")
     else:
         st.info("ℹ️ Quote OVER non disponibili per EV.")
+
+# Chiamata pagina
+run_live_minute_analysis(df)
