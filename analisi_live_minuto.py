@@ -161,4 +161,86 @@ def run_live_minute_analysis(df):
                             tf_data[lbl] += 1
         total = sum(tf_data.values())
         tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        
+    # 🔍 Sezione: Chi segna per primo dopo questo momento? (Campionato)
+    with left:
+        st.markdown("### 🥅 Primo Goal post-minuto (Campionato)")
+        first_goal = {"Home": 0, "Away": 0, "No Goal": 0}
+        for _, row in df_matched.iterrows():
+            home_goals = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
+            away_goals = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+            future_home = [m for m in home_goals if m > current_min]
+            future_away = [m for m in away_goals if m > current_min]
+            if not future_home and not future_away:
+                first_goal["No Goal"] += 1
+            elif future_home and (not future_away or min(future_home) < min(future_away)):
+                first_goal["Home"] += 1
+            elif future_away and (not future_home or min(future_away) < min(future_home)):
+                first_goal["Away"] += 1
+        total = sum(first_goal.values())
+        df_first = pd.DataFrame([
+            {"Chi Segna": k, "Occorrenze": v, "%": v / total * 100 if total else 0}
+            for k, v in first_goal.items()
+        ])
+        st.dataframe(df_first.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+
+    # 🔍 Sezione: Chi segna per primo dopo questo momento? (Squadra)
+    with right:
+        st.markdown(f"### 🥅 Primo Goal post-minuto (Squadra - {team})")
+        first_goal = {"Squadra": 0, "Avversario": 0, "No Goal": 0}
+        for _, row in df_team.iterrows():
+            home_goals = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
+            away_goals = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+            future_home = [m for m in home_goals if m > current_min]
+            future_away = [m for m in away_goals if m > current_min]
+            if not future_home and not future_away:
+                first_goal["No Goal"] += 1
+            elif future_home and (not future_away or min(future_home) < min(future_away)):
+                primo = "Squadra" if row["Home"] == team else "Avversario"
+                first_goal[primo] += 1
+            elif future_away and (not future_home or min(future_away) < min(future_home)):
+                primo = "Avversario" if row["Home"] == team else "Squadra"
+                first_goal[primo] += 1
+        total = sum(first_goal.values())
+        df_first = pd.DataFrame([
+            {"Chi Segna": k, "Occorrenze": v, "%": v / total * 100 if total else 0}
+            for k, v in first_goal.items()
+        ])
+        st.dataframe(df_first.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+
+st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+# ⏱️ Tempo medio del primo goal post-minuto (Campionato)
+    with left:
+        st.markdown("### ⏱️ Tempo medio al primo goal (Campionato)")
+        goal_minutes = []
+        for _, row in df_matched.iterrows():
+            home_goals = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
+            away_goals = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+            future = sorted([m for m in home_goals + away_goals if m > current_min])
+            if future:
+                goal_minutes.append(future[0] - current_min)
+        if goal_minutes:
+            avg_min = sum(goal_minutes) / len(goal_minutes)
+            st.write(f"📌 In media, il primo goal arriva dopo **{avg_min:.1f} minuti**")
+        else:
+            st.write("⚠️ Nessun goal registrato dopo questo minuto.")
+
+    # 📈 Over attesi nei prossimi 15 minuti (Campionato)
+    with left:
+        st.markdown("### 📈 Over attesi nei prossimi 15 minuti (Campionato)")
+        over_1 = 0
+        over_2 = 0
+        for _, row in df_matched.iterrows():
+            home_goals = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
+            away_goals = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+            future_goals = [m for m in home_goals + away_goals if current_min < m <= current_min + 15]
+            if len(future_goals) >= 1:
+                over_1 += 1
+            if len(future_goals) >= 2:
+                over_2 += 1
+        total_matches = len(df_matched)
+        df_over = pd.DataFrame({
+            "Over 0.5 Goal": [over_1, over_1 / total_matches * 100 if total_matches else 0],
+            "Over 1.5 Goal": [over_2, over_2 / total_matches * 100 if total_matches else 0],
+        }, index=["Occorrenze", "%"])
+        st.dataframe(df_over.T.style.format({"%": "{:.2f}"}), use_container_width=True)
