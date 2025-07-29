@@ -156,7 +156,7 @@ def run_live_minute_analysis(df):
         home_w = (df_matched["Home Goal FT"] > df_matched["Away Goal FT"]).mean() * 100
         draw = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
         loss = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
-        df_league_stats = pd.DataFrame({"Campionato": [matches, home_w, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
+        df_league_stats = pd.DataFrame({"Campionato": [matches, home_w, draw, loss]}, index=["Matches", "Home %", "Draw %", "Away %"])
         st.dataframe(df_league_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### 📈 OVER dal minuto live (Campionato)")
@@ -188,7 +188,7 @@ def run_live_minute_analysis(df):
                 draw = (df_team["Away Goal FT"] == df_team["Home Goal FT"]).mean() * 100
                 loss = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
 
-            df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
+            df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Home %", "Draw %", "Away %"])
             st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
         else:
             st.warning(f"⚠️ Dati insufficienti per mostrare le statistiche squadra per {team}. Colonne mancanti: 'Home Goal FT' o 'Away Goal FT'.")
