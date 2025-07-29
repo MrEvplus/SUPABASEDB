@@ -18,13 +18,39 @@ SUPABASE_KEY = "eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3
 # ----------------------------------------------------------
 
 
-def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):", selectbox_key="selectbox_campionato_duckdb"):
+def load_data_from_supabase(
+    parquet_label="Parquet file URL (Supabase Storage):", 
+    selectbox_key="selectbox_campionato_duckdb"
+):
     st.sidebar.markdown("### 🌐 Origine: Supabase Storage (Parquet via DuckDB)")
 
     parquet_url = st.sidebar.text_input(
         parquet_label,
         value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet/partite.parquet?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
     )
+
+    try:
+        df = duckdb.query(f"SELECT * FROM read_parquet('{parquet_url}')").to_df()
+        campionati_disponibili = sorted(df["country"].dropna().unique())
+    except Exception as e:
+        st.error(f"Errore nel caricamento del file Parquet da Supabase: {e}")
+        return pd.DataFrame(), ""
+
+    campionato_scelto = st.sidebar.selectbox(
+        "Seleziona Campionato:",
+        [""] + campionati_disponibili,
+        key=selectbox_key
+    )
+
+    if campionato_scelto == "":
+        st.info("ℹ️ Seleziona un campionato per procedere.")
+        st.stop()
+
+    df_filtered = df[df["country"] == campionato_scelto]
+
+    stagione = df_filtered['Stagione'].max() if 'Stagione' in df_filtered.columns else ''
+
+    return df_filtered, stagione
 
     # Carico TUTTO il parquet senza filtri
     query_all = f"""
