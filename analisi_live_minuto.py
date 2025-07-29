@@ -173,3 +173,41 @@ def run_live_minute_analysis(df):
         tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
         st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
+def generate_post_minute_stats(df_matches, current_min, tf_bands, tf_labels, team=None):
+    tf_stats = []
+    for lbl, (a, b) in zip(tf_labels, tf_bands):
+        gf = gs = tf_count = match_with_2 = 0
+        for _, row in df_matches.iterrows():
+            home = row["Home"]
+            away = row["Away"]
+            mh = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
+            ma = extract_minutes(pd.Series([row.get("minuti goal segnato away", "")]))
+            goals_home = [m for m in mh if current_min < m <= b and m > a]
+            goals_away = [m for m in ma if current_min < m <= b and m > a]
+            goals = goals_home + goals_away
+
+            if goals:
+                tf_count += 1
+            if len(goals) >= 2:
+                match_with_2 += 1
+
+            if team:
+                if team == home:
+                    gf += len(goals_home)
+                    gs += len(goals_away)
+                elif team == away:
+                    gf += len(goals_away)
+                    gs += len(goals_home)
+            else:
+                gf += len(goals_home)
+                gs += len(goals_away)
+
+        total_matches = len(df_matches)
+        tf_stats.append({
+            "Intervallo": lbl,
+            "Goal Fatti": gf,
+            "Goal Subiti": gs,
+            "% Partite con Goal": round(tf_count / total_matches * 100, 2) if total_matches else 0,
+            "Match con ≥2 Goal": match_with_2
+        })
+    return pd.DataFrame(tf_stats)
