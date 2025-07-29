@@ -14,7 +14,7 @@ def run_mappa_leghe_supabase():
     origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"])
 
     if origine == "Supabase":
-        df, _ = load_data_from_supabase()
+        df, _ = load_data_from_supabase(parquet_label="🗺️ URL Parquet (Mappatura Leghe)")
     else:
         df, _ = load_data_from_file()
 
