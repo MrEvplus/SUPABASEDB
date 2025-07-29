@@ -20,41 +20,29 @@ def run_team_stats(df, db_selected):
     df_filtered = df[df["country"] == db_selected]
 
     seasons_available = sorted(df_filtered["Stagione"].dropna().unique().tolist(), reverse=True)
+
     if not seasons_available:
-        st.warning(f"⚠️ Nessuna stagione disponibile per {db_selected}.")
+        st.warning(f"⚠️ Nessuna stagione disponibile nel database per il campionato {db_selected}.")
         st.stop()
 
-    st.write(f"Stagioni disponibili: {seasons_available}")
+    st.write(f"Stagioni disponibili nel database: {seasons_available}")
 
     seasons_selected = st.multiselect(
-        "Seleziona le stagioni:",
+        "Seleziona le stagioni su cui vuoi calcolare le statistiche:",
         options=seasons_available,
         default=seasons_available[:1]
     )
+
     if not seasons_selected:
         st.warning("Seleziona almeno una stagione.")
         st.stop()
 
     df_filtered = df_filtered[df_filtered["Stagione"].isin(seasons_selected)]
 
-    teams_available = sorted(set(df_filtered["Home"]).union(set(df_filtered["Away"])))
-
-    squadra_casa = st.selectbox("Seleziona Squadra 1", teams_available, key="sc1")
-    squadra_ospite = st.selectbox("Seleziona Squadra 2 (facoltativa)", [""] + teams_available, key="sc2")
-
-    if squadra_casa:
-        st.subheader(f"✅ Statistiche Macro per {squadra_casa}")
-        show_team_macro_stats(df_filtered, squadra_casa, venue="Home")
-
-    if squadra_ospite and squadra_ospite != squadra_casa:
-        st.subheader(f"✅ Statistiche Macro per {squadra_ospite}")
-        show_team_macro_stats(df_filtered, squadra_ospite, venue="Away")
-
-        st.subheader(f"⚔️ Goal Patterns - {squadra_casa} vs {squadra_ospite}")
-        try:
-            show_goal_patterns(df_filtered, squadra_casa, squadra_ospite, db_selected, seasons_selected[0])
-        except Exception as e:
-            st.error(f"Errore durante la generazione dei Goal Patterns: {e}")
+    teams_available = sorted(
+        set(df_filtered["Home"].dropna().unique()) |
+        set(df_filtered["Away"].dropna().unique())
+    )
 
     # ✅ INIZIALIZZA SESSION STATE
     if "squadra_casa" not in st.session_state:
