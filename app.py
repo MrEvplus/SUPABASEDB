@@ -20,13 +20,14 @@ from partite_del_giorno import run_partite_del_giorno
 from mappa_leghe_supabase import run_mappa_leghe_supabase
 
 
+
 def get_league_mapping():
     try:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    data = supabase.table("league_mapping").select("*").execute().data
-    return {r["code"]: r["league_name"] for r in data}
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        data = supabase.table("league_mapping").select("*").execute().data
+        return {r["code"]: r["league_name"] for r in data}
     except:
-    return {}
+        return {}
 
 
 # -------------------------------------------------------
