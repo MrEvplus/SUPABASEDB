@@ -1,6 +1,12 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+
+# ----------------------------------------------------------
+# Variabili di connessione Supabase
+# ----------------------------------------------------------
+SUPABASE_URL = "https://dqqlaamfxaconepbdjek.supabase.co"
+SUPABASE_KEY = "eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
 import duckdb
 
 # ----------------------------------------------------------

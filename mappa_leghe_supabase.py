@@ -1,15 +1,14 @@
 import streamlit as st
+from utils import SUPABASE_URL, SUPABASE_KEY
 import pandas as pd
-from utils import load_data_from_supabase, load_data_from_file
+from utils import load_data_from_supabase, load_data_from_file, SUPABASE_URL, SUPABASE_KEY
 from supabase import create_client
 
 st.set_page_config(page_title="Mappa Leghe Supabase", layout="wide")
 st.title("🗺️ Mappatura Manuale Campionati su Supabase")
 
 # Connessione Supabase
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase = create_client(url, key)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Origine dati
 origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"])
