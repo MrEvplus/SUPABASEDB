@@ -69,6 +69,9 @@ def run_live_minute_analysis(df):
     df_matched = pd.DataFrame(matched)
     st.success(f"✅ {len(df_matched)} partite trovate a {live_h}-{live_a}′ al minuto {current_min}’")
 
+    tf_bands = [(0, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 90)]
+    tf_labels = [f"{a}-{b}" for a, b in tf_bands]
+
     with st.expander("📑 Partite campionato considerate per l'analisi"):
         if not df_matched.empty:
             st.dataframe(
@@ -92,82 +95,35 @@ def run_live_minute_analysis(df):
             matched_team.append(r)
     df_team = pd.DataFrame(matched_team)
 
-    tf_bands = [(0, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 90)]
-    tf_labels = [f"{a}-{b}" for a, b in tf_bands]
-
-    def goal_post_minute(df_filtered):
-        tf_data = {lbl: 0 for lbl in tf_labels}
-        total_matches = len(df_filtered)
-        goal_counts = {lbl: 0 for lbl in tf_labels}
-
-        for _, row in df_filtered.iterrows():
-            goal_mins = extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]]))
-            for val in goal_mins:
-                if val > current_min:
-                    for lbl, (a, b) in zip(tf_labels, tf_bands):
-                        if a < val <= b:
-                            goal_counts[lbl] += 1
-                            break
-
-        tf_df = pd.DataFrame([{
-            "Intervallo": k,
-            "Goal": goal_counts[k],
-            "%": (goal_counts[k] / total_matches) * 100 if total_matches > 0 else 0
-        } for k in tf_labels])
-        return tf_df
-
     left, right = st.columns(2)
 
+    def generate_post_minute_stats(df_matches, team=None):
+        tf_stats = []
+        for lbl, (a, b) in zip(tf_labels, tf_bands):
+            gf = gs = tf_count = match_with_goal = 0
+            for _, row in df_matches.iterrows():
+                home = row["Home"]
+                away = row["Away"]
+                mh = extract_minutes(pd.Series([row["minuti goal segnato home"]]))
+                ma = extract_minutes(pd.Series([row["minuti goal segnato away"]]))
+                goals = [(m, 'home') for m in mh if m > current_min and a < m <= b] + [(m, 'away') for m in ma if m > current_min and a < m <= b]
+                if goals:
+                    tf_count += 1
+                gf += sum(1 for m, t in goals if (t == 'home' and (not team or home == team)) or (t == 'away' and (not team or away == team)))
+                gs += sum(1 for m, t in goals if (t == 'home' and (not team or away == team)) or (t == 'away' and (not team or home == team)))
+                if len(goals) >= 2:
+                    match_with_goal += 1
+            tf_stats.append({"Intervallo": lbl, "Goal Fatti": gf, "Goal Subiti": gs,
+                             "% Partite con Goal": round(tf_count / len(df_matches) * 100, 2) if len(df_matches) else 0,
+                             "Match con ≥2 goal": match_with_goal})
+        return pd.DataFrame(tf_stats)
+
     with left:
-        st.markdown("### 📊 Statistiche Campionato")
-        matches = len(df_matched)
-        home_w = (df_matched["Home Goal FT"] > df_matched["Away Goal FT"]).mean() * 100
-        draw = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
-        loss = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
-        df_league_stats = pd.DataFrame({"Campionato": [matches, home_w, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
-        st.dataframe(df_league_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
-
-        st.markdown("### 📈 OVER dal minuto live (Campionato)")
-        extra_goals = (df_matched["Home Goal FT"] + df_matched["Away Goal FT"] - (live_h + live_a)).fillna(0)
-        for thr in [0.5, 1.5, 2.5, 3.5, 4.5]:
-            st.markdown(f"- **OVER {thr}:** {(extra_goals > thr).mean() * 100:.2f}%")
-
-        st.markdown("### 📋 Risultati finali (Campionato)")
-        freq = df_matched["Home Goal FT"].astype(str) + "-" + df_matched["Away Goal FT"].astype(str)
-        freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
-        freq_df["%"] = (freq_df["Occorrenze"] / len(df_matched) * 100).round(2)
-        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
-
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
-        tf_df = goal_post_minute(df_matched)
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        df_stats = generate_post_minute_stats(df_matched)
+        st.dataframe(df_stats.style.format({"% Partite con Goal": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
     with right:
-        st.markdown(f"### 📊 Statistiche Squadra - {team}")
-        t_matches = len(df_team)
-        if label.startswith("H_"):
-            win = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
-            draw = (df_team["Home Goal FT"] == df_team["Away Goal FT"]).mean() * 100
-            loss = (df_team["Home Goal FT"] < df_team["Away Goal FT"]).mean() * 100
-        else:
-            win = (df_team["Away Goal FT"] > df_team["Home Goal FT"]).mean() * 100
-            draw = (df_team["Away Goal FT"] == df_team["Home Goal FT"]).mean() * 100
-            loss = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
-        df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
-        st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
-
-        st.markdown("### 📈 OVER dal minuto live (Squadra)")
-        extra_goals = (df_team["Home Goal FT"] + df_team["Away Goal FT"] - (live_h + live_a)).fillna(0)
-        for thr in [0.5, 1.5, 2.5, 3.5, 4.5]:
-            st.markdown(f"- **OVER {thr}:** {(extra_goals > thr).mean() * 100:.2f}%")
-
-        st.markdown("### 📋 Risultati finali (Squadra)")
-        freq = df_team["Home Goal FT"].astype(str) + "-" + df_team["Away Goal FT"].astype(str)
-        freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
-        freq_df["%"] = (freq_df["Occorrenze"] / len(df_team) * 100).round(2)
-        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
-
-        st.markdown("### ⏱️ Goal post-minuto (Squadra)")
-        tf_df = goal_post_minute(df_team)
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
-
+        st.markdown(f"### ⏱️ Goal post-minuto ({team})")
+        df_stats_team = generate_post_minute_stats(df_team, team=team)
+        st.dataframe(df_stats_team.style.format({"% Partite con Goal": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
