@@ -95,6 +95,27 @@ def run_live_minute_analysis(df):
     tf_bands = [(0, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 90)]
     tf_labels = [f"{a}-{b}" for a, b in tf_bands]
 
+    def goal_post_minute(df_filtered):
+        tf_data = {lbl: 0 for lbl in tf_labels}
+        total_matches = len(df_filtered)
+        goal_counts = {lbl: 0 for lbl in tf_labels}
+
+        for _, row in df_filtered.iterrows():
+            goal_mins = extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]]))
+            for val in goal_mins:
+                if val > current_min:
+                    for lbl, (a, b) in zip(tf_labels, tf_bands):
+                        if a < val <= b:
+                            goal_counts[lbl] += 1
+                            break
+
+        tf_df = pd.DataFrame([{
+            "Intervallo": k,
+            "Goal": goal_counts[k],
+            "%": (goal_counts[k] / total_matches) * 100 if total_matches > 0 else 0
+        } for k in tf_labels])
+        return tf_df
+
     left, right = st.columns(2)
 
     with left:
@@ -118,16 +139,7 @@ def run_live_minute_analysis(df):
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
-        tf_data = {lbl: 0 for lbl in tf_labels}
-        for _, row in df_matched.iterrows():
-            all_goals = extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]]))
-            for val in all_goals:
-                if val > current_min:
-                    for lbl, (a, b) in zip(tf_labels, tf_bands):
-                        if a < val <= b:
-                            tf_data[lbl] += 1
-        total = len(df_matched)
-        tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
+        tf_df = goal_post_minute(df_matched)
         st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
     with right:
@@ -156,14 +168,6 @@ def run_live_minute_analysis(df):
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Squadra)")
-        tf_data = {lbl: 0 for lbl in tf_labels}
-        for _, row in df_team.iterrows():
-            all_goals = extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]]))
-            for val in all_goals:
-                if val > current_min:
-                    for lbl, (a, b) in zip(tf_labels, tf_bands):
-                        if a < val <= b:
-                            tf_data[lbl] += 1
-        total = len(df_team)
-        tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
+        tf_df = goal_post_minute(df_team)
         st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+
