@@ -1,60 +1,47 @@
 import streamlit as st
-from utils import SUPABASE_URL, SUPABASE_KEY
 import pandas as pd
-from utils import load_data_from_supabase, load_data_from_file, SUPABASE_URL, SUPABASE_KEY
 from supabase import create_client
+from utils import load_data_from_supabase, load_data_from_file, SUPABASE_URL, SUPABASE_KEY
 
-st.set_page_config(page_title="Mappa Leghe Supabase", layout="wide")
-st.title("🗺️ Mappatura Manuale Campionati su Supabase")
+def run_mappa_leghe_supabase():
+    st.set_page_config(page_title="Mappa Leghe Supabase", layout="wide")
+    st.title("🗺️ Mappatura Manuale Campionati su Supabase")
 
-# Connessione Supabase
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    # Connessione Supabase
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Origine dati
-origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"])
+    # Origine dati
+    origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"])
 
-if origine == "Supabase":
-    df, _ = load_data_from_supabase()
-else:
-    df, _ = load_data_from_file()
+    if origine == "Supabase":
+        df, _ = load_data_from_supabase()
+    else:
+        df, _ = load_data_from_file()
 
-if "country" not in df.columns:
-    st.error("❌ Il file caricato non contiene la colonna 'country'.")
-    st.stop()
+    if "country" not in df.columns:
+        st.error("❌ Il file caricato non contiene la colonna 'country'.")
+        st.stop()
 
-# Codici unici
-codici = sorted(df["country"].dropna().unique().tolist())
+    # Codici unici
+    codici = sorted(df["country"].dropna().unique().tolist())
 
-# Leggi mappatura esistente da Supabase
-response = supabase.table("league_mapping").select("*").execute()
-existing_rows = response.data if response.data else []
-existing_dict = {r["code"]: r["league_name"] for r in existing_rows}
-
-# Costruisci editor
-rows = []
-for code in codici:
-    league_name = existing_dict.get(code, "")
-    rows.append({"code": code, "league_name": league_name})
-
-df_editor = pd.DataFrame(rows)
-
-st.markdown("### ✏️ Modifica i nomi reali dei campionati")
-df_edited = st.data_editor(df_editor, num_rows="dynamic", use_container_width=True)
-
-# Salvataggio in Supabase
-if st.button("💾 Salva mappatura su Supabase"):
+    # Leggi mappatura esistente da Supabase
     try:
-        # Cancella vecchi valori
-        for code in codici:
-            supabase.table("league_mapping").delete().eq("code", code).execute()
-
-        # Inserisci nuovi valori
-        data = df_edited.to_dict(orient="records")
-        supabase.table("league_mapping").insert(data).execute()
-        st.success("✅ Mappatura salvata correttamente su Supabase!")
+        response = supabase.table("league_mapping").select("*").execute()
+        existing_rows = response.data if response.data else []
     except Exception as e:
-        st.error(f"❌ Errore durante il salvataggio: {e}")
+        st.error(f"Errore nel recupero dati da Supabase: {e}")
+        existing_rows = []
 
-# Preview
-if st.checkbox("👁️ Visualizza mappatura salvata su Supabase"):
-    st.dataframe(df_edited, use_container_width=True)
+    # Costruisci DataFrame modificabile
+    existing_dict = {r["code"]: r["league_name"] for r in existing_rows}
+    data = [{"code": code, "league_name": existing_dict.get(code, "")} for code in codici]
+
+    df_edit = pd.DataFrame(data)
+    st.markdown("✏️ Inserisci il nome reale dei campionati corrispondenti ai codici nel tuo file Parquet.")
+    edited = st.data_editor(df_edit, num_rows="dynamic", use_container_width=True)
+
+    if st.button("💾 Salva mappatura su Supabase"):
+        supabase.table("league_mapping").delete().neq("code", "").execute()
+        supabase.table("league_mapping").insert(edited.to_dict(orient="records")).execute()
+        st.success("✅ Mappatura aggiornata con successo!")
