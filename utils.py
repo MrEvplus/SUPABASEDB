@@ -1,21 +1,22 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import duckdb
+import duckdb
+import pandas as pd
+import streamlit as st
+
 
 # ----------------------------------------------------------
 # Variabili di connessione Supabase
 # ----------------------------------------------------------
 SUPABASE_URL = "https://dqqlaamfxaconepbdjek.supabase.co"
 SUPABASE_KEY = "eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
-import duckdb
 
 # ----------------------------------------------------------
 # Caricamento da DuckDB + Parquet su Supabase Storage
 # ----------------------------------------------------------
 
-import duckdb
-import pandas as pd
-import streamlit as st
 
 def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):"):
     st.sidebar.markdown("### 🌐 Origine: Supabase Storage (Parquet via DuckDB)")
