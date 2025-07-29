@@ -7,10 +7,8 @@ def run_mappa_leghe_supabase():
     st.set_page_config(page_title="Mappa Leghe Supabase", layout="wide")
     st.title("🗺️ Mappatura Manuale Campionati su Supabase")
 
-    # Connessione Supabase
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    # Origine dati
     origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"])
 
     if origine == "Supabase":
@@ -18,30 +16,29 @@ def run_mappa_leghe_supabase():
     else:
         df, _ = load_data_from_file()
 
-    if "country" not in df.columns:
-        st.error("❌ Il file caricato non contiene la colonna 'country'.")
+    if not all(col in df.columns for col in ["country", "league"]):
+        st.error("❌ Il file deve contenere le colonne 'country' e 'league'.")
         st.stop()
 
-    # Codici unici
-    codici = sorted(df["country"].dropna().unique().tolist())
+    df_unique = df[["country", "league"]].drop_duplicates().reset_index(drop=True)
 
     # Leggi mappatura esistente da Supabase
     try:
         response = supabase.table("league_mapping").select("*").execute()
-        existing_rows = response.data if response.data else []
+        existing = pd.DataFrame(response.data) if response.data else pd.DataFrame(columns=["code", "country", "league"])
     except Exception as e:
         st.error(f"Errore nel recupero dati da Supabase: {e}")
-        existing_rows = []
+        existing = pd.DataFrame(columns=["code", "country", "league"])
 
-    # Costruisci DataFrame modificabile
-    existing_dict = {r["code"]: r["league_name"] for r in existing_rows}
-    data = [{"code": code, "league_name": existing_dict.get(code, "")} for code in codici]
+    # Merge tra dati da mappare e mappatura esistente
+    df_merge = df_unique.merge(existing, on=["country", "league"], how="left")
 
-    df_edit = pd.DataFrame(data)
-    st.markdown("✏️ Inserisci il nome reale dei campionati corrispondenti ai codici nel tuo file Parquet.")
-    edited = st.data_editor(df_edit, num_rows="dynamic", use_container_width=True)
+    # Mostra editor
+    st.markdown("✏️ Inserisci o modifica il codice identificativo `code` per ciascun campionato (es. IT1, BR2, ecc.).")
+    edited = st.data_editor(df_merge[["code", "country", "league"]], num_rows="dynamic", use_container_width=True)
 
     if st.button("💾 Salva mappatura su Supabase"):
+        # Elimina tutto e reinserisci la nuova mappatura
         supabase.table("league_mapping").delete().neq("code", "").execute()
-        supabase.table("league_mapping").insert(edited.to_dict(orient="records")).execute()
+        supabase.table("league_mapping").insert(edited.dropna(subset=["code"]).to_dict(orient="records")).execute()
         st.success("✅ Mappatura aggiornata con successo!")
