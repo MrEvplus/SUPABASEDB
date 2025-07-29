@@ -203,11 +203,17 @@ def run_live_minute_analysis(df):
             st.warning(f"⚠️ Dati insufficienti per calcolare OVER live per {team}. Colonne mancanti.")
 
         st.markdown("### 📋 Risultati finali (Squadra)")
-        freq = df_team["Home Goal FT"].astype(str) + "-" + df_team["Away Goal FT"].astype(str)
-        freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
-        freq_df["%"] = (freq_df["Occorrenze"] / len(df_team) * 100).round(2)
-        st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
+            freq = df_team["Home Goal FT"].astype(str) + "-" + df_team["Away Goal FT"].astype(str)
+            freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
+            freq_df["%"] = (freq_df["Occorrenze"] / len(df_team) * 100).round(2)
+            st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        else:
+            st.warning(f"⚠️ Dati insufficienti per mostrare i risultati finali per {team}.")
 
         st.markdown("### ⏱️ Goal post-minuto (Squadra)")
-        df_tf_team = compute_post_minute_stats(df_team, current_min, label)
-        st.dataframe(df_tf_team.style.apply(color_stat_rows, axis=1), use_container_width=True)
+        if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
+            df_tf_team = compute_post_minute_stats(df_team, current_min, label)
+            st.dataframe(df_tf_team.style.apply(color_stat_rows, axis=1), use_container_width=True)
+        else:
+            st.warning(f"⚠️ Dati insufficienti per mostrare i goal post-minuto per {team}.")
