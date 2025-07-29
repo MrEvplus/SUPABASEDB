@@ -17,6 +17,18 @@ from ai_inference import run_ai_inference
 from analisi_live_minuto import run_live_minute_analysis
 from partite_del_giorno import run_partite_del_giorno
 
+
+def get_league_mapping():
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        supabase = create_client(url, key)
+        data = supabase.table("league_mapping").select("*").execute().data
+        return {r["code"]: r["league_name"] for r in data}
+    except:
+        return {}
+
+
 # -------------------------------------------------------
 # CONFIGURAZIONE PAGINA
 # -------------------------------------------------------
@@ -50,6 +62,9 @@ origine_dati = st.sidebar.radio(
 )
 if origine_dati == "Supabase":
     df, db_selected = load_data_from_supabase()
+
+league_dict = get_league_mapping()
+db_selected = league_dict.get(db_selected, db_selected)
 else:
     df, db_selected = load_data_from_file()
 
