@@ -17,9 +17,13 @@ import duckdb
 import pandas as pd
 import streamlit as st
 
-def load_data_from_supabase():
+def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):"):
     st.sidebar.markdown("### 🌐 Origine: Supabase Storage (Parquet via DuckDB)")
 
+    parquet_url = st.sidebar.text_input(
+        parquet_label,
+        value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet/partite.parquet?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
+    )
     parquet_url = st.sidebar.text_input(
         "Parquet file URL (Supabase Storage):",
         value="https://dqqlaamfxaconepbdjek.supabase.co/storage/v1/object/sign/partite.parquet/partite.parquet?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3M2UtYWVhMy01MmM1ZDc3MTAwMzUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYXJ0aXRlLnBhcnF1ZXQvcGFydGl0ZS5wYXJxdWV0IiwiaWF0IjoxNzUyMzU2NjYxLCJleHAiOjQ5MDU5NTY2NjF9.z0ihpL899yh9taqhx1uWs3CJQehrySmca7VRYm_K-AI"
