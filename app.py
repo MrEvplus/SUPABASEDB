@@ -62,15 +62,12 @@ origine_dati = st.sidebar.radio(
 )
 if origine_dati == "Supabase":
     df, db_selected = load_data_from_supabase()
-
-league_dict = get_league_mapping()
-db_selected = league_dict.get(db_selected, db_selected)
+    league_dict = get_league_mapping()
+    db_selected = league_dict.get(db_selected, db_selected)
 else:
     df, db_selected = load_data_from_file()
-
-# -------------------------------------------------------
-# SESSION STATE PER SELEZIONE SQUADRE
-# -------------------------------------------------------
+    league_dict = get_league_mapping()
+    db_selected = league_dict.get(db_selected, db_selected)
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
 if "squadra_ospite" not in st.session_state:
