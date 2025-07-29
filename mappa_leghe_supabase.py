@@ -1,44 +1,54 @@
+
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from utils import load_data_from_supabase, load_data_from_file, SUPABASE_URL, SUPABASE_KEY
+from utils import SUPABASE_URL, SUPABASE_KEY, load_data_from_supabase
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def run_mappa_leghe_supabase():
-    st.set_page_config(page_title="Mappa Leghe Supabase", layout="wide")
-    st.title("🗺️ Mappatura Manuale Campionati su Supabase")
+    st.header("🗺️ Mappatura Manuale Campionati su Supabase")
 
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-    origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"])
+    origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"], index=0)
 
     if origine == "Supabase":
-        df, _ = load_data_from_supabase(parquet_label="🗺️ URL Parquet (Mappatura Leghe)", selectbox_key="selectbox_campionato_mappa_leghe")
+        try:
+            response = supabase.table("league_mapping").select("*").execute()
+            records = response.data
+            df = pd.DataFrame(records)
+
+            if df.empty or "country" not in df.columns or "league" not in df.columns:
+                st.error("❌ Il file deve contenere le colonne 'country' e 'league'.")
+                return
+
+            st.success("✅ Dati correttamente caricati da Supabase.")
+            st.dataframe(df)
+
+        except Exception as e:
+            st.error(f"Errore durante il recupero dei dati da Supabase: {e}")
+
     else:
-        df, _ = load_data_from_file()
+        uploaded_file = st.file_uploader("Carica un file CSV con colonne 'country' e 'league':", type="csv")
+        if uploaded_file:
+            try:
+                df = pd.read_csv(uploaded_file)
+                if "country" not in df.columns or "league" not in df.columns:
+                    st.error("❌ Il file deve contenere le colonne 'country' e 'league'.")
+                    return
 
-    if not all(col in df.columns for col in ["country", "league"]):
-        st.error("❌ Il file deve contenere le colonne 'country' e 'league'.")
-        st.stop()
+                st.success("✅ File caricato correttamente.")
+                st.dataframe(df)
 
-    df_unique = df[["country", "league"]].drop_duplicates().reset_index(drop=True)
+                if st.button("📤 Salva su Supabase"):
+                    # Cancella prima i dati esistenti (opzionale)
+                    supabase.table("league_mapping").delete().neq("code", "").execute()
 
-    # Leggi mappatura esistente da Supabase
-    try:
-        response = supabase.table("league_mapping").select("*").execute()
-        existing = pd.DataFrame(response.data) if response.data else pd.DataFrame(columns=["code", "country", "league"])
-    except Exception as e:
-        st.error(f"Errore nel recupero dati da Supabase: {e}")
-        existing = pd.DataFrame(columns=["code", "country", "league"])
+                    # Inserisci nuovi dati
+                    insert_data = df.to_dict(orient="records")
+                    for chunk in [insert_data[i:i + 50] for i in range(0, len(insert_data), 50)]:
+                        supabase.table("league_mapping").insert(chunk).execute()
 
-    # Merge tra dati da mappare e mappatura esistente
-    df_merge = df_unique.merge(existing, on=["country", "league"], how="left")
+                    st.success("✅ Dati salvati correttamente su Supabase.")
 
-    # Mostra editor
-    st.markdown("✏️ Inserisci o modifica il codice identificativo `code` per ciascun campionato (es. IT1, BR2, ecc.).")
-    edited = st.data_editor(df_merge[["code", "country", "league"]], num_rows="dynamic", use_container_width=True)
-
-    if st.button("💾 Salva mappatura su Supabase"):
-        # Elimina tutto e reinserisci la nuova mappatura
-        supabase.table("league_mapping").delete().neq("code", "").execute()
-        supabase.table("league_mapping").insert(edited.dropna(subset=["code"]).to_dict(orient="records")).execute()
-        st.success("✅ Mappatura aggiornata con successo!")
+            except Exception as e:
+                st.error(f"Errore durante la lettura o il salvataggio del file: {e}")
