@@ -16,6 +16,7 @@ from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
 from analisi_live_minuto import run_live_minute_analysis
 from partite_del_giorno import run_partite_del_giorno
+from mappa_leghe_supabase import run_mappa_leghe_supabase
 
 
 def get_league_mapping():
@@ -191,7 +192,6 @@ if "Data" in df.columns:
     df = df[(df["Data"].isna()) | (df["Data"] <= today)]
 # -------------------------------------------------------
 # ESECUZIONE SEZIONI
-    from mappa_leghe_supabase import run_mappa_leghe_supabase
 # -------------------------------------------------------
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
@@ -204,6 +204,7 @@ elif menu_option == "Correct Score EV":
 elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)
 elif menu_option == "Partite del Giorno":
+    run_partite_del_giorno(df, db_selected)
 elif menu_option == "Mappatura Campionati":
     run_mappa_leghe_supabase()
     run_partite_del_giorno(df, db_selected)
