@@ -8,7 +8,7 @@ def color_stat_rows(row):
     for col, val in row.items():
         if col == "Matches" and row.name == "Matches":
             styles.append("font-weight: bold; color: black; background-color: transparent")
-        elif isinstance(val, float) and ("%" in col or str(row.name).endswith("%") or col == "%"):
+        elif isinstance(val, float) and ("%" in col or row.name.endswith("%") or col == "%"):
             styles.append(color_pct(val))
         else:
             styles.append("")
@@ -173,12 +173,7 @@ def run_live_minute_analysis(df):
 
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
         df_tf_league = compute_post_minute_stats(df_matched, current_min, label)
-        st.dataframe(
-    df_tf_league[["Intervallo", "GF", "GS", "% Partite con Goal", "Quota Relativa % Goal", "% Partite con ≥2 Goal", "Quota Relativa % 1+ Goal"]]
-    .style.format({"% Partite con Goal": "{:.2f}%", "Quota Relativa % Goal": "{:.2f}", "% Partite con ≥2 Goal": "{:.2f}%", "Quota Relativa % 1+ Goal": "{:.2f}"})
-    .apply(color_stat_rows, axis=1),
-    use_container_width=True
-)
+        st.dataframe(df_tf_league.style.apply(color_stat_rows, axis=1), use_container_width=True)
 
     with right:
         st.markdown(f"### 📊 Statistiche Squadra - {team}")
@@ -221,11 +216,6 @@ def run_live_minute_analysis(df):
         st.markdown("### ⏱️ Goal post-minuto (Squadra)")
         if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
             df_tf_team = compute_post_minute_stats(df_team, current_min, label)
-            st.dataframe(
-    df_tf_team[["Intervallo", "GF", "GS", "% Partite con Goal", "Quota Relativa % Goal", "% Partite con ≥2 Goal", "Quota Relativa % 1+ Goal"]]
-    .style.format({"% Partite con Goal": "{:.2f}%", "Quota Relativa % Goal": "{:.2f}", "% Partite con ≥2 Goal": "{:.2f}%", "Quota Relativa % 1+ Goal": "{:.2f}"})
-    .apply(color_stat_rows, axis=1),
-    use_container_width=True
-)
+            st.dataframe(df_tf_team.style.apply(color_stat_rows, axis=1), use_container_width=True)
         else:
             st.warning(f"⚠️ Dati insufficienti per mostrare i goal post-minuto per {team}.")
