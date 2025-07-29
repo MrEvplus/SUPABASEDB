@@ -511,56 +511,42 @@ def build_goal_pattern_html(patterns, team, color):
 # --------------------------------------------------------
 # PLOT TIMEFRAME GOALS
 # --------------------------------------------------------
-
 def plot_timeframe_goals(tf_scored, tf_conceded, tf_scored_pct, tf_conceded_pct, team):
-    import pandas as pd
-    import altair as alt
-
+    # build dataframe
     data = []
     for tf in tf_scored.keys():
-        try:
-            perc_scored = tf_scored_pct[tf]
-            perc_conceded = tf_conceded_pct[tf]
-            count_scored = tf_scored[tf]
-            count_conceded = tf_conceded[tf]
-        except KeyError:
-            continue
-
         data.append({
             "Time Frame": tf,
             "Type": "Goals Scored",
-            "Percentage": perc_scored if not pd.isna(perc_scored) else 0,
-            "Count": count_scored if not pd.isna(count_scored) else 0
+            "Percentage": tf_scored_pct[tf],
+            "Count": tf_scored[tf]
         })
         data.append({
             "Time Frame": tf,
             "Type": "Goals Conceded",
-            "Percentage": perc_conceded if not pd.isna(perc_conceded) else 0,
-            "Count": count_conceded if not pd.isna(count_conceded) else 0
+            "Percentage": tf_conceded_pct[tf],
+            "Count": tf_conceded[tf]
         })
 
     df_tf = pd.DataFrame(data)
-
-    if df_tf.empty or df_tf["Percentage"].isnull().all():
-        st.warning(f"⚠️ Dati insufficienti per generare grafico di {team}.")
-        return alt.Chart(pd.DataFrame({"x": [], "y": []})).mark_bar()
 
     chart = alt.Chart(df_tf).mark_bar().encode(
         x=alt.X("Time Frame:N", title="Minute Intervals", sort=list(tf_scored.keys())),
         y=alt.Y("Percentage:Q", title="Percentage (%)"),
         color=alt.Color("Type:N",
-                        scale=alt.Scale(
-                            domain=["Goals Scored", "Goals Conceded"],
-                            range=["green", "red"]
-                        )),
-        xOffset="Type:N",
-        tooltip=["Type", "Time Frame", "Percentage", "Count"]
+                         scale=alt.Scale(
+                             domain=["Goals Scored", "Goals Conceded"],
+                             range=["green", "red"]
+                       )),
+       xOffset="Type:N",
+       tooltip=["Type", "Time Frame", "Percentage", "Count"]
     ).properties(
-        width=500,
-        height=300,
-        title=f"Goal Time Frame % - {team}"
+       width=500,
+       height=300,
+       title=f"Goal Time Frame % - {team}"
     )
 
+    # Add text labels
     text = alt.Chart(df_tf).mark_text(
         align='center',
         baseline='middle',
@@ -575,3 +561,207 @@ def plot_timeframe_goals(tf_scored, tf_conceded, tf_scored_pct, tf_conceded_pct,
 
     return chart + text
 
+# --------------------------------------------------------
+# SHOW GOAL PATTERNS
+# --------------------------------------------------------
+def show_goal_patterns(df, team1, team2, country, stagione):
+    # Filtra le partite per le due squadre
+    df_team1_home = df[
+        (df["Home"] == team1) &
+        (df["country"] == country) &
+        (df["Stagione"] == stagione)
+    ]
+    df_team2_away = df[
+        (df["Away"] == team2) &
+        (df["country"] == country) &
+        (df["Stagione"] == stagione)
+    ]
+
+    mask_played_home = df_team1_home.apply(is_match_played, axis=1)
+    df_team1_home = df_team1_home[mask_played_home]
+
+    mask_played_away = df_team2_away.apply(is_match_played, axis=1)
+    df_team2_away = df_team2_away[mask_played_away]
+
+    total_home_matches = len(df_team1_home)
+    total_away_matches = len(df_team2_away)
+
+    # Calcola pattern Home
+    patterns_home, tf_scored_home, tf_conceded_home = compute_goal_patterns(
+        df_team1_home, "Home", total_home_matches
+    )
+    tf_scored_home_pct = {
+        k: round((v / sum(tf_scored_home.values())) * 100, 2) if sum(tf_scored_home.values()) > 0 else 0
+        for k, v in tf_scored_home.items()
+    }
+    tf_conceded_home_pct = {
+        k: round((v / sum(tf_conceded_home.values())) * 100, 2) if sum(tf_conceded_home.values()) > 0 else 0
+        for k, v in tf_conceded_home.items()
+    }
+
+    # Calcola pattern Away
+    patterns_away, tf_scored_away, tf_conceded_away = compute_goal_patterns(
+        df_team2_away, "Away", total_away_matches
+    )
+    tf_scored_away_pct = {
+        k: round((v / sum(tf_scored_away.values())) * 100, 2) if sum(tf_scored_away.values()) > 0 else 0
+        for k, v in tf_scored_away.items()
+    }
+    tf_conceded_away_pct = {
+        k: round((v / sum(tf_conceded_away.values())) * 100, 2) if sum(tf_conceded_away.values()) > 0 else 0
+        for k, v in tf_conceded_away.items()
+    }
+
+    patterns_total = compute_goal_patterns_total(
+        patterns_home, patterns_away,
+        total_home_matches, total_away_matches
+    )
+
+    html_home = build_goal_pattern_html(patterns_home, team1, "green")
+    html_away = build_goal_pattern_html(patterns_away, team2, "red")
+    html_total = build_goal_pattern_html(
+        {k: patterns_total.get(k, 0) for k in goal_pattern_keys_without_tf()},
+        "Totale", "blue"
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(f"### {team1} (Home)")
+        st.markdown(html_home, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"### {team2} (Away)")
+        st.markdown(html_away, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown(f"### Totale")
+        st.markdown(html_total, unsafe_allow_html=True)
+
+    # Grafico Time Frame Goals HOME
+    chart_home = plot_timeframe_goals(
+        tf_scored=tf_scored_home,
+        tf_conceded=tf_conceded_home,
+        tf_scored_pct=tf_scored_home_pct,
+        tf_conceded_pct=tf_conceded_home_pct,
+        team=team1
+    )
+    st.markdown(f"### Distribuzione Goal Time Frame - {team1} (Home)")
+    st.altair_chart(chart_home, use_container_width=True)
+
+    # Grafico Time Frame Goals AWAY
+    chart_away = plot_timeframe_goals(
+        tf_scored=tf_scored_away,
+        tf_conceded=tf_conceded_away,
+        tf_scored_pct=tf_scored_away_pct,
+        tf_conceded_pct=tf_conceded_away_pct,
+        team=team2
+    )
+    st.markdown(f"### Distribuzione Goal Time Frame - {team2} (Away)")
+    st.altair_chart(chart_away, use_container_width=True)
+
+# --------------------------------------------------------
+# COMPUTE GOAL PATTERNS TOTAL
+# --------------------------------------------------------
+def compute_goal_patterns_total(patterns_home, patterns_away, total_home_matches, total_away_matches):
+    total_matches = total_home_matches + total_away_matches
+    total_patterns = {}
+
+    for key in goal_pattern_keys():
+        if key == "P":
+            total_patterns["P"] = total_matches
+        elif key in ["Win %", "Draw %", "Loss %"]:
+            # Media delle due squadre per Win, Draw, Loss
+            if key == "Win %":
+                val = (patterns_home["Win %"] + patterns_away["Loss %"]) / 2
+            elif key == "Draw %":
+                val = (patterns_home["Draw %"] + patterns_away["Draw %"]) / 2
+            elif key == "Loss %":
+                val = (patterns_home["Loss %"] + patterns_away["Win %"]) / 2
+            total_patterns[key] = round(val, 2)
+        elif key in ["First Goal %", "Last Goal %"]:
+            # non calcoliamo questi valori nel totale
+            continue
+        else:
+            home_val = patterns_home.get(key, 0)
+            away_val = patterns_away.get(key, 0)
+            val = (
+                (home_val * total_home_matches) + (away_val * total_away_matches)
+            ) / total_matches if total_matches > 0 else 0
+            total_patterns[key] = round(val, 2)
+
+    return total_patterns
+
+# --------------------------------------------------------
+# GOAL PATTERN KEYS
+# --------------------------------------------------------
+def goal_pattern_keys():
+    keys = [
+        "P", "Win %", "Draw %", "Loss %", "First Goal %", "Last Goal %",
+        "1-0 %", "1-1 after 1-0 %", "2-0 after 1-0 %",
+        "0-1 %", "1-1 after 0-1 %", "0-2 after 0-1 %",
+        "2+ Goals %", "H 1st %", "D 1st %", "A 1st %",
+        "H 2nd %", "D 2nd %", "A 2nd %", "0-0 %"
+    ]
+    for start, end in timeframes():
+        keys.append(f"{start}-{end} Goals %")
+    return keys
+
+def goal_pattern_keys_without_tf():
+    keys = [
+        "P", "Win %", "Draw %", "Loss %", "0-0 %",
+        "1-0 %", "1-1 after 1-0 %", "2-0 after 1-0 %",
+        "0-1 %", "1-1 after 0-1 %", "0-2 after 0-1 %",
+        "2+ Goals %", "H 1st %", "D 1st %", "A 1st %",
+        "H 2nd %", "D 2nd %", "A 2nd %"
+    ]
+    return keys
+
+# --------------------------------------------------------
+# COMPUTE TEAM MACRO STATS
+# --------------------------------------------------------
+def compute_team_macro_stats(df, team, venue):
+    if venue == "Home":
+        data = df[df["Home"] == team]
+        goals_for_col = "Home Goal FT"
+        goals_against_col = "Away Goal FT"
+    else:
+        data = df[df["Away"] == team]
+        goals_for_col = "Away Goal FT"
+        goals_against_col = "Home Goal FT"
+
+    mask_played = data.apply(is_match_played, axis=1)
+    data = data[mask_played]
+
+    total_matches = len(data)
+    if total_matches == 0:
+        return {}
+
+    if venue == "Home":
+        wins = sum(data["Home Goal FT"] > data["Away Goal FT"])
+        draws = sum(data["Home Goal FT"] == data["Away Goal FT"])
+        losses = sum(data["Home Goal FT"] < data["Away Goal FT"])
+    else:
+        wins = sum(data["Away Goal FT"] > data["Home Goal FT"])
+        draws = sum(data["Away Goal FT"] == data["Home Goal FT"])
+        losses = sum(data["Away Goal FT"] < data["Home Goal FT"])
+
+    goals_for = data[goals_for_col].mean()
+    goals_against = data[goals_against_col].mean()
+
+    btts_count = sum(
+        (row["Home Goal FT"] > 0) and (row["Away Goal FT"] > 0)
+        for _, row in data.iterrows()
+    )
+    btts = (btts_count / total_matches) * 100 if total_matches > 0 else 0
+
+    stats = {
+        "Matches Played": total_matches,
+        "Win %": round((wins / total_matches) * 100, 2),
+        "Draw %": round((draws / total_matches) * 100, 2),
+        "Loss %": round((losses / total_matches) * 100, 2),
+        "Avg Goals Scored": round(goals_for, 2),
+        "Avg Goals Conceded": round(goals_against, 2),
+        "BTTS %": round(btts, 2)
+    }
+    return stats
