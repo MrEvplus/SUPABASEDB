@@ -18,7 +18,7 @@ SUPABASE_KEY = "eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNjUxZjNmOC02NTMyLTQ3
 # ----------------------------------------------------------
 
 
-def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):"):
+def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):", selectbox_key="selectbox_campionato_duckdb"):
     st.sidebar.markdown("### 🌐 Origine: Supabase Storage (Parquet via DuckDB)")
 
     parquet_url = st.sidebar.text_input(
