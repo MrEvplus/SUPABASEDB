@@ -2,12 +2,13 @@ streamlit
 pandas
 numpy
 plotly
+matplotlib
+altair
 openpyxl
-streamlit-aggrid
 supabase
 duckdb
-requests  # per chiamate API HuggingFace
-matplotlib
+requests
+streamlit-aggrid
+scipy
 xlrd>=2.0.1
-
-
+pyarrow
