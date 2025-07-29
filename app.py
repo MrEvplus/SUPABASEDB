@@ -45,6 +45,19 @@ menu_option = st.sidebar.radio(
 # SELEZIONE ORIGINE DATI
 # -------------------------------------------------------
 
+
+def get_league_mapping():
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        supabase = create_client(url, key)
+        data = supabase.table("league_mapping").select("*").execute().data
+        return {r["code"]: r["league_name"] for r in data}
+    except:
+        return {}
+
+league_dict = get_league_mapping()
+
 origine_dati = st.sidebar.radio(
     "Seleziona origine dati:",
     ["Supabase", "Upload Manuale"]
