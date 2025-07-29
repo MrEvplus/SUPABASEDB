@@ -75,8 +75,8 @@ def compute_post_minute_stats(df, current_min, label):
             "Intervallo": lbl,
             "GF": v["GF"],
             "GS": v["GS"],
-            "% Partite con Goal": round(v["Match_1+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0,
-            "% Partite con ≥2 Goal": round(v["Match_2+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0
+            "% Goal": round(v["Match_1+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0,
+            "% 1+ Goal": round(v["Match_2+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0
         }
         for lbl, v in data.items()
     ])
