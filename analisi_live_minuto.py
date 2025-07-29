@@ -153,11 +153,22 @@ def run_live_minute_analysis(df):
     with left:
         st.markdown("### 📊 Statistiche Campionato")
         matches = len(df_matched)
-        home_w = (df_matched["Home Goal FT"] > df_matched["Away Goal FT"]).mean() * 100
-        draw = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
-        loss = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
-        df_league_stats = pd.DataFrame({"Campionato": [matches, home_w, draw, loss]}, index=["Matches", "Home %", "Draw %", "Away %"])
-        st.dataframe(df_league_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
+
+        if not df_matched.empty and "Home Goal FT" in df_matched.columns and "Away Goal FT" in df_matched.columns:
+            home_w = (df_matched["Home Goal FT"] > df_matched["Away Goal FT"]).mean() * 100
+            draw = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
+            loss = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
+
+            df_league_stats = pd.DataFrame(
+                {"Campionato": [matches, home_w, draw, loss]},
+                index=["Matches", "Home %", "Draw %", "Away %"]
+            )
+            st.dataframe(
+                df_league_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1),
+                use_container_width=True
+            )
+        else:
+            st.warning("⚠️ Dati insufficienti per mostrare le statistiche campionato. Colonne mancanti.").apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### 📈 OVER dal minuto live (Campionato)")
         extra_goals = (df_matched["Home Goal FT"] + df_matched["Away Goal FT"] - (live_h + live_a)).fillna(0)
@@ -188,10 +199,38 @@ def run_live_minute_analysis(df):
                 draw = (df_team["Away Goal FT"] == df_team["Home Goal FT"]).mean() * 100
                 loss = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
 
-            df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Win %", "Draw %", "Lose %"])
+            df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Home %", "Draw %", "Away %"])
             st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
         else:
+            st.warning(f"⚠️ Dati insufficienti per mostrare le statistiche squadra per {team}. Colonne mancanti.").apply(color_stat_rows, axis=1), use_container_width=True)
+        else:
             st.warning(f"⚠️ Dati insufficienti per mostrare le statistiche squadra per {team}. Colonne mancanti: 'Home Goal FT' o 'Away Goal FT'.")
+
+        
+        st.markdown("### 📈 OVER dal minuto live (Squadra)")
+        if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
+            extra_goals = (df_team["Home Goal FT"] + df_team["Away Goal FT"] - (live_h + live_a)).fillna(0)
+            for thr in [0.5, 1.5, 2.5, 3.5, 4.5]:
+                st.markdown(f"- **OVER {thr}:** {((extra_goals > thr).mean() * 100):.2f}%")
+        else:
+            st.warning(f"⚠️ Dati insufficienti per calcolare OVER live per {team}. Colonne mancanti.")
+
+        st.markdown("### 📋 Risultati finali (Squadra)")
+        if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
+            freq = df_team["Home Goal FT"].astype(str) + "-" + df_team["Away Goal FT"].astype(str)
+            freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
+            freq_df["%"] = (freq_df["Occorrenze"] / len(df_team) * 100).round(2)
+            st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        else:
+            st.warning(f"⚠️ Dati insufficienti per mostrare i risultati finali per {team}.")
+
+        st.markdown("### ⏱️ Goal post-minuto (Squadra)")
+        if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
+            df_tf_team = compute_post_minute_stats(df_team, current_min, label)
+            st.dataframe(df_tf_team.style.apply(color_stat_rows, axis=1), use_container_width=True)
+        else:
+            st.warning(f"⚠️ Dati insufficienti per mostrare i goal post-minuto per {team}.")
+
 
         
         st.markdown("### 📈 OVER dal minuto live (Squadra)")
