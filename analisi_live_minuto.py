@@ -172,30 +172,17 @@ def run_live_minute_analysis(df):
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
-        df_tf_league = compute_post_minute_stats(df_matched, current_min, label)
-        st.dataframe(
-    df_tf_league[["Intervallo", "GF", "GS", "% Partite con Goal", "Quota Relativa % Goal", "% Partite con ≥2 Goal", "Quota Relativa % 1+ Goal"]]
-    .style.format({"% Partite con Goal": "{:.2f}%", "Quota Relativa % Goal": "{:.2f}", "% Partite con ≥2 Goal": "{:.2f}%", "Quota Relativa % 1+ Goal": "{:.2f}"})
-    .apply(color_stat_rows, axis=1),
-    use_container_width=True
-)
-
-    with right:
-        st.markdown(f"### 📊 Statistiche Squadra - {team}")
-        t_matches = len(df_team)
-
-        if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
-            if label.startswith("H_"):
-                win = (df_team["Home Goal FT"] > df_team["Away Goal FT"]).mean() * 100
-                draw = (df_team["Home Goal FT"] == df_team["Away Goal FT"]).mean() * 100
-                loss = (df_team["Home Goal FT"] < df_team["Away Goal FT"]).mean() * 100
-            else:
-                win = (df_team["Away Goal FT"] > df_team["Home Goal FT"]).mean() * 100
-                draw = (df_team["Away Goal FT"] == df_team["Home Goal FT"]).mean() * 100
-                loss = (df_team["Away Goal FT"] < df_team["Home Goal FT"]).mean() * 100
-
-            df_team_stats = pd.DataFrame({team: [t_matches, win, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
-            st.dataframe(df_team_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
+        if not df_tf_league.empty:
+            cols = ["Intervallo", "GF", "GS", "% Partite con Goal", "Quota Relativa % Goal", "% Partite con ≥2 Goal", "Quota Relativa % 1+ Goal"]
+            cols_presenti = [c for c in cols if c in df_tf_league.columns]
+            st.dataframe(
+                df_tf_league[cols_presenti]
+                .style.format({c: "{:.2f}%" if "%" in c else "{:.2f}" for c in cols_presenti if c != "Intervallo"})
+                .apply(color_stat_rows, axis=1),
+                use_container_width=True
+            )
+        else:
+            st.warning("⚠️ Nessun dato disponibile per goal post-minuto (Campionato).")
         else:
             st.warning(f"⚠️ Dati insufficienti per mostrare le statistiche squadra per {team}. Colonne mancanti: 'Home Goal FT' o 'Away Goal FT'.")
 
