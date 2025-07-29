@@ -75,8 +75,8 @@ def compute_post_minute_stats(df, current_min, label):
             "Intervallo": lbl,
             "GF": v["GF"],
             "GS": v["GS"],
-            "% Goal": round(v["Match_1+"] / v["TotalMatch"] * 100, 2), "Quota Relativa % Goal": round(100 / (v["Match_1+"] / v["TotalMatch"] * 100), 2) if v["Match_1+"] > 0 else None if v["TotalMatch"] > 0 else 0,
-            "% 1+ Goal": round(v["Match_2+"] / v["TotalMatch"] * 100, 2), "Quota Relativa % 1+ Goal": round(100 / (v["Match_2+"] / v["TotalMatch"] * 100), 2) if v["Match_2+"] > 0 else None if v["TotalMatch"] > 0 else 0
+            "% Goal": round(v["Match_1+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0,
+            "% 1+ Goal": round(v["Match_2+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0
         }
         for lbl, v in data.items()
     ])
@@ -168,7 +168,6 @@ def run_live_minute_analysis(df):
         freq = df_matched["Home Goal FT"].astype(str) + "-" + df_matched["Away Goal FT"].astype(str)
         freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
         freq_df["%"] = (freq_df["Occorrenze"] / len(df_matched) * 100).round(2)
-        freq_df["Quota Relativa"] = (100 / freq_df["%"]).round(2)
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
@@ -208,7 +207,6 @@ def run_live_minute_analysis(df):
             freq = df_team["Home Goal FT"].astype(str) + "-" + df_team["Away Goal FT"].astype(str)
             freq_df = freq.value_counts().rename_axis("Risultato").reset_index(name="Occorrenze")
             freq_df["%"] = (freq_df["Occorrenze"] / len(df_team) * 100).round(2)
-            freq_df["Quota Relativa"] = (100 / freq_df["%"]).round(2)
             st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
         else:
             st.warning(f"⚠️ Dati insufficienti per mostrare i risultati finali per {team}.")
