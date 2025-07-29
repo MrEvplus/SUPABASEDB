@@ -49,7 +49,8 @@ menu_option = st.sidebar.radio(
         "Confronto Pre Match",
         "Correct Score EV",
         "Analisi Live da Minuto",
-        "Partite del Giorno"
+        "Partite del Giorno",
+        "Mappatura Campionati"
     ]
 )
 
@@ -190,6 +191,7 @@ if "Data" in df.columns:
     df = df[(df["Data"].isna()) | (df["Data"] <= today)]
 # -------------------------------------------------------
 # ESECUZIONE SEZIONI
+    from mappa_leghe_supabase import run_mappa_leghe_supabase
 # -------------------------------------------------------
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
@@ -202,4 +204,6 @@ elif menu_option == "Correct Score EV":
 elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)
 elif menu_option == "Partite del Giorno":
+elif menu_option == "Mappatura Campionati":
+    run_mappa_leghe_supabase()
     run_partite_del_giorno(df, db_selected)
