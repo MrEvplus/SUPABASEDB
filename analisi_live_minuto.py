@@ -4,10 +4,15 @@ import matplotlib.pyplot as plt
 from utils import label_match, extract_minutes
 
 def color_stat_rows(row):
-    if row.name == "Matches":
-        return ["font-weight: bold; color: black; background-color: transparent"] * len(row)
-    return [color_pct(v) for v in row]
-
+    styles = []
+    for col, val in row.items():
+        if col == "Matches" and row.name == "Matches":
+            styles.append("font-weight: bold; color: black; background-color: transparent")
+        elif isinstance(val, float) and ("%" in col or row.name.endswith("%") or col == "%"):
+            styles.append(color_pct(val))
+        else:
+            styles.append("")
+    return styles
 
 def color_pct(val):
     try:
@@ -21,17 +26,61 @@ def color_pct(val):
     else:
         return "background-color: green; color: black;"
 
-def color_stat_rows(row):
-    styles = []
-    for col, val in row.items():
-        if col == "Matches" and row.name == "Matches":
-            styles.append("font-weight: bold; color: black; background-color: transparent")
-        elif isinstance(val, float) and ("%" in col or row.name.endswith("%") or col == "%"):
-            styles.append(color_pct(val))
-        else:
-            styles.append("")
-    return styles
+def compute_post_minute_stats(df, current_min, label):
+    tf_bands = [(0, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 90)]
+    tf_labels = [f"{a}-{b}" for a, b in tf_bands]
 
+    data = {lbl: {"GF": 0, "GS": 0, "Match_1+": 0, "Match_2+": 0, "TotalMatch": 0} for lbl in tf_labels}
+
+    for _, row in df.iterrows():
+        mh = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
+        ma = extract_minutes(pd.Series([row.get("minuti goal segnato away", "")]))
+        all_post = [(m, "H") for m in mh if m > current_min] + [(m, "A") for m in ma if m > current_min]
+
+        goals_by_tf = {lbl: {"GF": 0, "GS": 0} for lbl in tf_labels}
+        for m, side in all_post:
+            for lbl, (a, b) in zip(tf_labels, tf_bands):
+                if a < m <= b:
+                    if label.startswith("H_"):
+                        if side == "H":
+                            goals_by_tf[lbl]["GF"] += 1
+                        else:
+                            goals_by_tf[lbl]["GS"] += 1
+                    elif label.startswith("A_"):
+                        if side == "A":
+                            goals_by_tf[lbl]["GF"] += 1
+                        else:
+                            goals_by_tf[lbl]["GS"] += 1
+                    else:
+                        if side == "H":
+                            goals_by_tf[lbl]["GF"] += 1
+                        else:
+                            goals_by_tf[lbl]["GS"] += 1
+                    break
+
+        for lbl in tf_labels:
+            gf = goals_by_tf[lbl]["GF"]
+            gs = goals_by_tf[lbl]["GS"]
+            total = gf + gs
+            if total > 0:
+                data[lbl]["Match_1+"] += 1
+            if total >= 2:
+                data[lbl]["Match_2+"] += 1
+            data[lbl]["GF"] += gf
+            data[lbl]["GS"] += gs
+            data[lbl]["TotalMatch"] += 1
+
+    df_stats = pd.DataFrame([
+        {
+            "Intervallo": lbl,
+            "GF": v["GF"],
+            "GS": v["GS"],
+            "% Partite con Goal": round(v["Match_1+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0,
+            "% Partite con ≥2 Goal": round(v["Match_2+"] / v["TotalMatch"] * 100, 2) if v["TotalMatch"] > 0 else 0
+        }
+        for lbl, v in data.items()
+    ])
+    return df_stats
 
 def run_live_minute_analysis(df):
     st.set_page_config(page_title="Analisi Live Minuto", layout="wide")
@@ -99,9 +148,6 @@ def run_live_minute_analysis(df):
             matched_team.append(r)
     df_team = pd.DataFrame(matched_team)
 
-    tf_bands = [(0, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 90)]
-    tf_labels = [f"{a}-{b}" for a, b in tf_bands]
-
     left, right = st.columns(2)
 
     with left:
@@ -125,16 +171,8 @@ def run_live_minute_analysis(df):
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Campionato)")
-        tf_data = {lbl: 0 for lbl in tf_labels}
-        for _, row in df_matched.iterrows():
-            for val in extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]])):
-                if val > current_min:
-                    for lbl, (a, b) in zip(tf_labels, tf_bands):
-                        if a < val <= b:
-                            tf_data[lbl] += 1
-        total = sum(tf_data.values())
-        tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
+        df_tf_league = compute_post_minute_stats(df_matched, current_min, label)
+        st.dataframe(df_tf_league.style.apply(color_stat_rows, axis=1), use_container_width=True)
 
     with right:
         st.markdown(f"### 📊 Statistiche Squadra - {team}")
@@ -162,52 +200,5 @@ def run_live_minute_analysis(df):
         st.dataframe(freq_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### ⏱️ Goal post-minuto (Squadra)")
-        tf_data = {lbl: 0 for lbl in tf_labels}
-        for _, row in df_team.iterrows():
-            for val in extract_minutes(pd.Series([row["minuti goal segnato home"], row["minuti goal segnato away"]])):
-                if val > current_min:
-                    for lbl, (a, b) in zip(tf_labels, tf_bands):
-                        if a < val <= b:
-                            tf_data[lbl] += 1
-        total = sum(tf_data.values())
-        tf_df = pd.DataFrame([{"Intervallo": k, "Goal": v, "%": v / total * 100 if total else 0} for k, v in tf_data.items()])
-        st.dataframe(tf_df.style.format({"%": "{:.2f}%"}).apply(color_stat_rows, axis=1), use_container_width=True)
-
-def generate_post_minute_stats(df_matches, current_min, tf_bands, tf_labels, team=None):
-    tf_stats = []
-    for lbl, (a, b) in zip(tf_labels, tf_bands):
-        gf = gs = tf_count = match_with_2 = 0
-        for _, row in df_matches.iterrows():
-            home = row["Home"]
-            away = row["Away"]
-            mh = extract_minutes(pd.Series([row.get("minuti goal segnato home", "")]))
-            ma = extract_minutes(pd.Series([row.get("minuti goal segnato away", "")]))
-            goals_home = [m for m in mh if current_min < m <= b and m > a]
-            goals_away = [m for m in ma if current_min < m <= b and m > a]
-            goals = goals_home + goals_away
-
-            if goals:
-                tf_count += 1
-            if len(goals) >= 2:
-                match_with_2 += 1
-
-            if team:
-                if team == home:
-                    gf += len(goals_home)
-                    gs += len(goals_away)
-                elif team == away:
-                    gf += len(goals_away)
-                    gs += len(goals_home)
-            else:
-                gf += len(goals_home)
-                gs += len(goals_away)
-
-        total_matches = len(df_matches)
-        tf_stats.append({
-            "Intervallo": lbl,
-            "Goal Fatti": gf,
-            "Goal Subiti": gs,
-            "% Partite con Goal": round(tf_count / total_matches * 100, 2) if total_matches else 0,
-            "Match con ≥2 Goal": match_with_2
-        })
-    return pd.DataFrame(tf_stats)
+        df_tf_team = compute_post_minute_stats(df_team, current_min, label)
+        st.dataframe(df_tf_team.style.apply(color_stat_rows, axis=1), use_container_width=True)
