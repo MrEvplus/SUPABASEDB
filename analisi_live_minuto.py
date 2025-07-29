@@ -8,7 +8,7 @@ def color_stat_rows(row):
     for col, val in row.items():
         if col == "Matches" and row.name == "Matches":
             styles.append("font-weight: bold; color: black; background-color: transparent")
-        elif isinstance(val, float) and ("%" in col or row.name.endswith("%") or col == "%"):
+        elif isinstance(val, float) and ("%" in col or str(row.name).endswith("%") or col == "%"):
             styles.append(color_pct(val))
         else:
             styles.append("")
