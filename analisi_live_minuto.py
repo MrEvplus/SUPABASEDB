@@ -156,23 +156,8 @@ def run_live_minute_analysis(df):
         home_w = (df_matched["Home Goal FT"] > df_matched["Away Goal FT"]).mean() * 100
         draw = (df_matched["Home Goal FT"] == df_matched["Away Goal FT"]).mean() * 100
         loss = (df_matched["Home Goal FT"] < df_matched["Away Goal FT"]).mean() * 100
-
-        # Calcolo quote relative
-        q_home_w = 100 / home_w if home_w > 0 else None
-        q_draw = 100 / draw if draw > 0 else None
-        q_loss = 100 / loss if loss > 0 else None
-
-        df_league_stats = pd.DataFrame({
-            "Campionato": [matches, home_w, draw, loss],
-            "Quota Relativa": [None, q_home_w, q_draw, q_loss]
-        }, index=["Matches", "Win %", "Draw %", "Loss %"])
-
-        st.dataframe(
-            df_league_stats
-            .style.format({"Campionato": "{:.2f}", "Quota Relativa": "{:.2f}"})
-            .apply(color_stat_rows, axis=1),
-            use_container_width=True
-        ).apply(color_stat_rows, axis=1), use_container_width=True)
+        df_league_stats = pd.DataFrame({"Campionato": [matches, home_w, draw, loss]}, index=["Matches", "Win %", "Draw %", "Loss %"])
+        st.dataframe(df_league_stats.style.format("{:.2f}").apply(color_stat_rows, axis=1), use_container_width=True)
 
         st.markdown("### 📈 OVER dal minuto live (Campionato)")
         extra_goals = (df_matched["Home Goal FT"] + df_matched["Away Goal FT"] - (live_h + live_a)).fillna(0)
