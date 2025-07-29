@@ -1,4 +1,4 @@
-mport streamlit as st
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from utils import label_match, extract_minutes
@@ -162,7 +162,7 @@ def run_live_minute_analysis(df):
         st.markdown("### 📈 OVER dal minuto live (Campionato)")
         extra_goals = (df_matched["Home Goal FT"] + df_matched["Away Goal FT"] - (live_h + live_a)).fillna(0)
         for thr in [0.5, 1.5, 2.5, 3.5, 4.5]:
-            st.markdown(f"- **OVER {thr}:** {(extra_goals > thr).mean() * 100:.2f}%")
+            st.markdown(f"- **OVER {thr}:** {((extra_goals > thr).mean() * 100):.2f}%")
 
         st.markdown("### 📋 Risultati finali (Campionato)")
         freq = df_matched["Home Goal FT"].astype(str) + "-" + df_matched["Away Goal FT"].astype(str)
@@ -198,7 +198,7 @@ def run_live_minute_analysis(df):
         if not df_team.empty and "Home Goal FT" in df_team.columns and "Away Goal FT" in df_team.columns:
             extra_goals = (df_team["Home Goal FT"] + df_team["Away Goal FT"] - (live_h + live_a)).fillna(0)
             for thr in [0.5, 1.5, 2.5, 3.5, 4.5]:
-                st.markdown(f"- **OVER {thr}:** {(extra_goals > thr).mean() * 100:.2f}%")
+                st.markdown(f"- **OVER {thr}:** {((extra_goals > thr).mean() * 100):.2f}%")
         else:
             st.warning(f"⚠️ Dati insufficienti per calcolare OVER live per {team}. Colonne mancanti.")
 
