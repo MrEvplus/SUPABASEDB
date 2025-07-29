@@ -11,7 +11,7 @@ from macros import run_macro_stats
 from squadre import run_team_stats
 from pre_match import run_pre_match
 from correct_score_ev_sezione import run_correct_score_ev
-from utils import load_data_from_supabase, load_data_from_file, label_match, SUPABASE_URL, SUPABASE_KEY
+from utils import load_data_from_supabase, load_data_from_file, label_match
 from supabase import create_client
 from api_football_utils import get_fixtures_today_for_countries
 from ai_inference import run_ai_inference
