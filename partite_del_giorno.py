@@ -21,7 +21,7 @@ def get_league_mapping():
         return {}
 
 def run_partite_del_giorno(df, db_selected):
-    st.title("\ud83d\uddd5\ufe0f Partite del Giorno - Upload File")
+    st.title("Partite del Giorno - Upload File")
     uploaded_file = st.file_uploader(
         "Carica il file delle partite del giorno (CSV, XLSX, XLS):",
         type=["csv", "xlsx", "xls"],
@@ -96,4 +96,3 @@ def run_partite_del_giorno(df, db_selected):
                 st.experimental_rerun()
     else:
         st.info("\u2139\ufe0f Carica un file per visualizzare le partite del giorno.")
-
