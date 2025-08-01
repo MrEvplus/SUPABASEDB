@@ -16,7 +16,8 @@ def get_league_mapping():
         df_map = pd.DataFrame(data)
         df_map["key"] = df_map["excel_country"].str.strip().str.upper() + "__" + df_map["excel_league"].str.strip().str.upper()
         return dict(zip(df_map["key"], df_map["db_league_code"]))
-    except:
+    except Exception as e:
+        st.error(f"Errore caricamento mapping: {e}")
         return {}
 
 def run_partite_del_giorno(df, db_selected):
@@ -75,6 +76,12 @@ def run_partite_del_giorno(df, db_selected):
             excel_league = str(row.get("league", "")).strip().upper()
             lookup_key = f"{excel_country}__{excel_league}"
             match_db = league_dict.get(lookup_key, db_selected)
+
+            st.info(f"🔍 lookup_key: {lookup_key}")
+            st.info(f"📌 db_league_code trovato: {match_db}")
+
+            if match_db == db_selected:
+                st.warning(f"⚠️ Mapping non trovato per: {excel_country} / {excel_league}")
 
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
             run_macro_stats(df, match_db)
