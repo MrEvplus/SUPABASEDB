@@ -372,27 +372,10 @@ def run_pre_match(df, db_selected):
         st.dataframe(df_comp, use_container_width=True)
 
         st.success("✅ Confronto Pre Match generato con successo!")
-        st.markdown("---")
-sst.header("📈 ROI Back & Lay + EV Live (Over e BTTS)")
+        st.header("📈 ROI Back & Lay + EV Live (Over e BTTS)")
 
         commission = 0.045
         df_label_ev = df.copy()
-
-        # -------------------------------
-        # DEBUG - Partite analizzate
-        # -------------------------------
-        st.markdown("### 🔍 DEBUG - Match analizzati")
-        st.write("Totali match filtrati (Label + Goal disponibili):", len(df_label_ev))
-        righe_senza_quote = df_label_ev[
-            (df_label_ev["cotao1"].isna()) &
-            (df_label_ev["cotao"].isna()) &
-            (df_label_ev["cotao3"].isna()) &
-            (df_label_ev["gg"].isna())
-        ]
-        st.write("❌ Match esclusi per mancanza quote:", len(righe_senza_quote))
-        with st.expander("📋 Visualizza match esclusi"):
-            st.dataframe(righe_senza_quote[["Home", "Away", "Home Goal FT", "Away Goal FT", "cotao1", "cotao", "cotao3", "gg"]])
-
         df_label_ev["Label"] = df_label_ev.apply(label_match, axis=1)
         df_label_ev = df_label_ev[df_label_ev["Label"] == label]
         df_label_ev = df_label_ev.dropna(subset=["Home Goal FT", "Away Goal FT"])
