@@ -319,3 +319,77 @@ def run_macro_stats(df, db_selected):
 
                 with cols[j]:
                     st.plotly_chart(fig, use_container_width=True)
+
+# ---------------------------------------------
+# FUNZIONI ROI GOAL & BTTS - Over 1.5/2.5/3.5 + GG
+# ---------------------------------------------
+
+def calcola_roi_mercato_over_under(df, linea, col_ov, col_un, commissione):
+    df = df.dropna(subset=["Home Goal FT", "Away Goal FT", col_ov, col_un])
+    df = df[(df[col_ov] >= 1.01) & (df[col_un] >= 1.01)]
+
+    tot = len(df)
+    win_ov = win_un = 0
+    profit_ov = profit_un = 0
+
+    for _, row in df.iterrows():
+        goals = row["Home Goal FT"] + row["Away Goal FT"]
+        ov, un = row[col_ov], row[col_un]
+
+        if goals > linea:
+            win_ov += 1
+            profit_ov += (ov - 1) * (1 - commissione)
+            profit_un -= 1
+        else:
+            win_un += 1
+            profit_un += (un - 1) * (1 - commissione)
+            profit_ov -= 1
+
+    if tot > 0:
+        return {
+            "Linea": f"Over {linea}",
+            "% Over": round((win_ov / tot) * 100, 2),
+            "% Under": round((win_un / tot) * 100, 2),
+            "ROI Over": round((profit_ov / tot) * 100, 2),
+            "ROI Under": round((profit_un / tot) * 100, 2),
+            "Profit Over": round(profit_ov, 2),
+            "Profit Under": round(profit_un, 2),
+            "Match": tot
+        }
+    else:
+        return {}
+
+def calcola_roi_btts(df, commissione):
+    df = df.dropna(subset=["Home Goal FT", "Away Goal FT", "odd goal", "odd nogoal"])
+    df = df[(df["odd goal"] >= 1.01) & (df["odd nogoal"] >= 1.01)]
+
+    tot = len(df)
+    win_gg = win_ng = 0
+    profit_gg = profit_ng = 0
+
+    for _, row in df.iterrows():
+        goal = (row["Home Goal FT"] > 0) and (row["Away Goal FT"] > 0)
+        gg, ng = row["odd goal"], row["odd nogoal"]
+
+        if goal:
+            win_gg += 1
+            profit_gg += (gg - 1) * (1 - commissione)
+            profit_ng -= 1
+        else:
+            win_ng += 1
+            profit_ng += (ng - 1) * (1 - commissione)
+            profit_gg -= 1
+
+    if tot > 0:
+        return {
+            "Linea": "BTTS",
+            "% Over": round((win_gg / tot) * 100, 2),
+            "% Under": round((win_ng / tot) * 100, 2),
+            "ROI Over": round((profit_gg / tot) * 100, 2),
+            "ROI Under": round((profit_ng / tot) * 100, 2),
+            "Profit Over": round(profit_gg, 2),
+            "Profit Under": round(profit_ng, 2),
+            "Match": tot
+        }
+    else:
+        return {}
