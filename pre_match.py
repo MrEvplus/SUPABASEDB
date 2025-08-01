@@ -515,7 +515,35 @@ def run_pre_match(df, db_selected):
         quote_over_list = []
         quote_under_list = []
 
+        
+        # Inserimento quote manuali
+        quota_inserita_over = st.number_input("📥 Inserisci quota fittizia Over 2.5 per ROI", min_value=1.01, step=0.01, value=2.00, key="quota_over_roi")
+        quota_inserita_under = st.number_input("📥 Inserisci quota fittizia Under 2.5 per ROI", min_value=1.01, step=0.01, value=1.80, key="quota_under_roi")
+
         for _, row in df_label.iterrows():
+            goals = row["Home Goal FT"] + row["Away Goal FT"]
+            quote_over = row.get("odd over 2,5", quota_inserita_over)
+            quote_under = row.get("odd under 2,5", quota_inserita_under)
+
+            # Se quote reali mancanti, usa quelle inserite
+            if pd.isna(quote_over) or quote_over < 1.01:
+                quote_over = quota_inserita_over
+            if pd.isna(quote_under) or quote_under < 1.01:
+                quote_under = quota_inserita_under
+
+            quote_over_list.append(quote_over)
+            quote_under_list.append(quote_under)
+            total += 1
+
+            if goals > 2.5:
+                over_hits += 1
+                profit_over += (quote_over - 1) * (1 - commission)
+                profit_under -= 1
+            else:
+                under_hits += 1
+                profit_under += (quote_under - 1) * (1 - commission)
+                profit_over -= 1
+
             goals = row["Home Goal FT"] + row["Away Goal FT"]
             quote_over = row.get("odd over 2,5", None)
             quote_under = row.get("odd under 2,5", None)
