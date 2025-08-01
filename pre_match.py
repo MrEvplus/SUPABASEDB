@@ -589,23 +589,43 @@ def run_pre_match(df, db_selected):
             # -------------------------------------------------------
             # 🧠 EV OVER / UNDER 2.5
             # -------------------------------------------------------
-            st.markdown("## 🧠 Expected Value (EV) - Over/Under 2.5")
+            
+        st.markdown("## 🧠 Expected Value (EV) Manuale")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                quota_attuale_ov = st.number_input("📥 Quota attuale Over 2.5", min_value=1.01, step=0.01, value=2.00)
-            with col2:
-                quota_attuale_un = st.number_input("📥 Quota attuale Under 2.5", min_value=1.01, step=0.01, value=1.80)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            quota_ov15 = st.number_input("Quota Live per Over 1.5", min_value=1.01, step=0.01, value=2.00)
+        with col2:
+            quota_ov25 = st.number_input("Quota Live per Over 2.5", min_value=1.01, step=0.01, value=2.00)
+        with col3:
+            quota_ov35 = st.number_input("Quota Live per Over 3.5", min_value=1.01, step=0.01, value=2.00)
+        with col4:
+            quota_btts = st.number_input("Quota Live per BTTS", min_value=1.01, step=0.01, value=2.00)
 
-            ev_over = round((quota_attuale_ov * (pct_over / 100)) - 1, 3)
-            ev_under = round((quota_attuale_un * (pct_under / 100)) - 1, 3)
+        ev_data = [
+            {"Mercato": "Over 1.5", "Quota": quota_ov15},
+            {"Mercato": "Over 2.5", "Quota": quota_ov25},
+            {"Mercato": "Over 3.5", "Quota": quota_ov35},
+            {"Mercato": "BTTS", "Quota": quota_btts}
+        ]
 
-            st.markdown(f"**📈 EV Over 2.5:** `{ev_over}` {'🟢 EV+ (valore)' if ev_over > 0 else '🔴 EV- (no valore)' if ev_over < 0 else '⚪️ Neutro'}")
-            st.markdown(f"**📉 EV Under 2.5:** `{ev_under}` {'🟢 EV+ (valore)' if ev_under > 0 else '🔴 EV- (no valore)' if ev_under < 0 else '⚪️ Neutro'}")
+        ev_table = []
+        for row in ev_data:
+            prob = 0.0
+            ev = round((row["Quota"] * (prob / 100)) - 1, 2)
+            nota = "🟢 EV+" if ev > 0 else "🔴 EV-" if ev < 0 else "⚪️ Neutro"
+            ev_table.append({
+                "Mercato": row["Mercato"],
+                "Quota Inserita": row["Quota"],
+                "Probabilità Storica": f"{prob:.1f}%",
+                "EV": ev,
+                "Note": nota
+            })
 
-            st.caption("Formula EV = (Quota × Probabilità Storica) - 1")
+        st.dataframe(pd.DataFrame(ev_table), use_container_width=True)
+    
 
-        else:
+else:
             st.warning("⚠️ Nessuna partita valida trovata per il calcolo ROI Over/Under.")
 
 
