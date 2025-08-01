@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 
@@ -8,20 +7,20 @@ from pre_match import run_pre_match
 from correct_score_ev_sezione import run_correct_score_ev
 from supabase import create_client
 
-
 def get_league_mapping():
     try:
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
         supabase = create_client(url, key)
         data = supabase.table("league_mapping").select("*").execute().data
-        return {r["code"]: r["league_name"] for r in data}
+        df_map = pd.DataFrame(data)
+        df_map["key"] = df_map["excel_country"].str.strip().str.upper() + "__" + df_map["excel_league"].str.strip().str.upper()
+        return dict(zip(df_map["key"], df_map["db_league_code"]))
     except:
         return {}
 
-
 def run_partite_del_giorno(df, db_selected):
-    st.title("📅 Partite del Giorno - Upload File")
+    st.title("\ud83d\uddd5\ufe0f Partite del Giorno - Upload File")
     uploaded_file = st.file_uploader(
         "Carica il file delle partite del giorno (CSV, XLSX, XLS):",
         type=["csv", "xlsx", "xls"],
@@ -58,7 +57,7 @@ def run_partite_del_giorno(df, db_selected):
                 df_today["Home"] = df_today["codechipa1"]
                 df_today["Away"] = df_today["codechipa2"]
             else:
-                st.error("⚠️ Il file deve contenere 'txtechipa1'/'txtechipa2' o 'codechipa1'/'codechipa2'.")
+                st.error("\u26a0\ufe0f Il file deve contenere 'txtechipa1'/'txtechipa2' o 'codechipa1'/'codechipa2'.")
                 st.stop()
 
         df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
@@ -71,14 +70,11 @@ def run_partite_del_giorno(df, db_selected):
             st.session_state["squadra_casa"] = casa
             st.session_state["squadra_ospite"] = ospite
 
-            if 'league' in df_today.columns:
-                raw_db = df_today.loc[df_today['match_str']==selected, 'league'].iloc[0]
-            elif 'country' in df_today.columns:
-                raw_db = df_today.loc[df_today['match_str']==selected, 'country'].iloc[0]
-            else:
-                raw_db = db_selected
-
-            match_db = league_dict.get(raw_db, raw_db)
+            row = df_today[df_today['match_str'] == selected].iloc[0]
+            excel_country = str(row.get("country", "")).strip().upper()
+            excel_league = str(row.get("league", "")).strip().upper()
+            lookup_key = f"{excel_country}__{excel_league}"
+            match_db = league_dict.get(lookup_key, db_selected)
 
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
             run_macro_stats(df, match_db)
@@ -86,10 +82,11 @@ def run_partite_del_giorno(df, db_selected):
             run_pre_match(df, match_db)
             run_correct_score_ev(df, match_db)
 
-            if st.button("🔙 Torna indietro"):
+            if st.button("\ud83d\udd19 Torna indietro"):
                 del st.session_state["selected_match"]
                 st.session_state["squadra_casa"] = ""
                 st.session_state["squadra_ospite"] = ""
                 st.experimental_rerun()
     else:
-        st.info("ℹ️ Carica un file per visualizzare le partite del giorno.")
+        st.info("\u2139\ufe0f Carica un file per visualizzare le partite del giorno.")
+
