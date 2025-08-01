@@ -23,14 +23,29 @@ def run_team_stats(df, db_selected):
 
     st.write(f"Stagioni disponibili nel database: {seasons_available}")
 
-    seasons_selected = st.multiselect(
-        "Seleziona le stagioni su cui vuoi calcolare le statistiche:",
-        options=seasons_available,
-        default=seasons_available[:1]
-    )
+    preset_options = {
+        "Ultimi 3 anni": 3,
+        "Ultimi 5 anni": 5,
+        "Ultimi 10 anni": 10,
+        "Tutti gli anni": len(seasons_available),
+        "Scelta manuale": None,
+    }
+
+    preset_choice = st.selectbox("📅 Seleziona un'opzione per le stagioni:", list(preset_options.keys()))
+
+    if preset_options[preset_choice] is not None:
+        num_years = preset_options[preset_choice]
+        seasons_selected = seasons_available[:num_years]
+        st.success(f"Hai selezionato: {seasons_selected}")
+    else:
+        seasons_selected = st.multiselect(
+            "Seleziona le stagioni su cui vuoi calcolare le statistiche:",
+            options=seasons_available,
+            default=seasons_available[:1]
+        )
 
     if not seasons_selected:
-        st.warning("Seleziona almeno una stagione.")
+        st.warning("⚠️ Seleziona almeno una stagione.")
         st.stop()
 
     df_filtered = df_filtered[df_filtered["Stagione"].isin(seasons_selected)]
@@ -40,7 +55,6 @@ def run_team_stats(df, db_selected):
         set(df_filtered["Away"].dropna().unique())
     )
 
-    # ✅ INIZIALIZZA Session State CON CHIAVI CORRETTE
     if "squadra_casa" not in st.session_state:
         st.session_state["squadra_casa"] = teams_available[0] if teams_available else ""
 
@@ -61,7 +75,7 @@ def run_team_stats(df, db_selected):
         squadra_ospite = st.selectbox(
             "Seleziona Squadra 2 (facoltativa - per confronto)",
             options=[""] + teams_available,
-            index=([""] + teams_available).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
+            index=( [""] + teams_available ).index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
             key="squadra_ospite"
         )
 
