@@ -518,7 +518,7 @@ def run_pre_match(df, db_selected):
         
         # Inserimento quote manuali
         quota_inserita_over = st.number_input("📥 Inserisci quota Over 2.5 per ROI", min_value=1.01, step=0.01, value=2.00, key="quota_over_roi")
-        quota_inserita_under = st.number_input("📥 Inserisci quota Under 2.5 per ROI", min_value=1.01, step=0.01, value=1.80, key="quota_under_roi")
+        quota_inserita_under = st.number_input("📥 Inserisci quota  Under 2.5 per ROI", min_value=1.01, step=0.01, value=1.80, key="quota_under_roi")
 
         for _, row in df_label.iterrows():
             goals = row["Home Goal FT"] + row["Away Goal FT"]
