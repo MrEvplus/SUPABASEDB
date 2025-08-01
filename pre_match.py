@@ -593,16 +593,22 @@ def run_pre_match(df, db_selected):
         # -------------------------------------------------------
         # 🧠 Expected Value (EV) Manuale - Allineato su una riga
         # -------------------------------------------------------
+        
+        # -------------------------------------------------------
+        # 🧠 Expected Value (EV) Manuale - 2 righe, 2 colonne
+        # -------------------------------------------------------
         st.markdown("## 🧠 Expected Value (EV) Manuale")
 
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
+        riga1_col1, riga1_col2 = st.columns(2)
+        with riga1_col1:
             quota_ov15 = st.number_input("Quota Live per Over 1.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov15")
-        with col2:
+        with riga1_col2:
             quota_ov25 = st.number_input("Quota Live per Over 2.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov25")
-        with col3:
+
+        riga2_col1, riga2_col2 = st.columns(2)
+        with riga2_col1:
             quota_ov35 = st.number_input("Quota Live per Over 3.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov35")
-        with col4:
+        with riga2_col2:
             quota_btts = st.number_input("Quota Live per BTTS", min_value=1.01, step=0.01, value=2.00, key="quota_ev_btts")
 
         ev_data = [
@@ -626,6 +632,7 @@ def run_pre_match(df, db_selected):
             })
 
         st.dataframe(pd.DataFrame(ev_table), use_container_width=True)
+
 
 
 
