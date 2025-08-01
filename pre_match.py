@@ -445,33 +445,6 @@ def run_pre_match(df, db_selected):
         st.dataframe(df_ev, use_container_width=True)
 
         # -------------------------------------------------------
-        # 🧠 EV Live Manuale - Quote inserite dall'utente
-        # -------------------------------------------------------
-        st.markdown("## 🧠 Calcolo Expected Value (EV) Manuale")
-
-        ev_rows = []
-        for voce in ["Over 1.5", "Over 2.5", "Over 3.5", "BTTS"]:
-            col1, col2 = st.columns(2)
-            with col1:
-                quota_live = st.number_input(f"Quota Live per {voce}", min_value=1.01, step=0.01, value=2.00, key=f"q_{voce}")
-            with col2:
-                prob_text = df_ev[df_ev["Mercato"] == voce]["Esiti %"].values[0].replace("%", "") if not df_ev.empty else "0"
-                prob = float(prob_text)
-                ev = round((quota_live * (prob / 100)) - 1, 3)
-                colore = "🟢 EV+" if ev > 0 else "🔴 EV-" if ev < 0 else "⚪️ Neutro"
-                ev_rows.append({
-                    "Mercato": voce,
-                    "Quota Inserita": quota_live,
-                    "Probabilità Storica": f"{prob}%",
-                    "EV": ev,
-                    "Note": colore
-                })
-
-        st.dataframe(pd.DataFrame(ev_rows), use_container_width=True)        
-        
-        
-
-        # -------------------------------------------------------
         # ⚖️ ROI OVER / UNDER 2.5 con quote reali dal database
         # -------------------------------------------------------
         st.markdown("## ⚖️ ROI Over / Under 2.5 Goals")
@@ -517,8 +490,8 @@ def run_pre_match(df, db_selected):
 
         
         # Inserimento quote manuali
-        quota_inserita_over = st.number_input("📥 Inserisci quota fittizia Over 2.5 per ROI", min_value=1.01, step=0.01, value=2.00, key="quota_over_roi")
-        quota_inserita_under = st.number_input("📥 Inserisci quota fittizia Under 2.5 per ROI", min_value=1.01, step=0.01, value=1.80, key="quota_under_roi")
+        quota_inserita_over = st.number_input("📥 Inserisci quota Over 2.5 per ROI", min_value=1.01, step=0.01, value=2.00, key="quota_over_roi")
+        quota_inserita_under = st.number_input("📥 Inserisci quota Under 2.5 per ROI", min_value=1.01, step=0.01, value=1.80, key="quota_under_roi")
 
         for _, row in df_label.iterrows():
             goals = row["Home Goal FT"] + row["Away Goal FT"]
