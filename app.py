@@ -20,7 +20,6 @@ from partite_del_giorno import run_partite_del_giorno
 from mappa_leghe_supabase import run_mappa_leghe_supabase
 
 
-
 def get_league_mapping():
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -28,7 +27,6 @@ def get_league_mapping():
         return {r["code"]: r["league_name"] for r in data}
     except:
         return {}
-
 
 # -------------------------------------------------------
 # CONFIGURAZIONE PAGINA
@@ -157,7 +155,6 @@ col_map = {
     "codechipa2": "CodeChipa2"
 }
 df.rename(columns=col_map, inplace=True)
-# Pulizia colonne
 df.columns = (
     df.columns
       .astype(str)
@@ -165,34 +162,47 @@ df.columns = (
       .str.replace(r"[\n\r\t]", "", regex=True)
       .str.replace(r"\s+", " ", regex=True)
 )
-# Crea colonna Label se non presente
 if "Label" not in df.columns:
     df["Label"] = df.apply(label_match, axis=1)
-# Filtro multi-stagione
+
 if "Stagione" in df.columns:
     stagioni_disponibili = sorted(df["Stagione"].dropna().unique())
-    stagioni_scelte = st.sidebar.multiselect(
-        "Seleziona le stagioni da includere nell'analisi:",
-        options=stagioni_disponibili,
-        default=stagioni_disponibili
+
+    opzione_range = st.sidebar.selectbox(
+        "Seleziona un intervallo stagioni predefinito:",
+        ["Tutte", "Ultime 3", "Ultime 5", "Ultime 10", "Personalizza"]
     )
+
+    if opzione_range == "Tutte":
+        stagioni_scelte = stagioni_disponibili
+    elif opzione_range == "Ultime 3":
+        stagioni_scelte = stagioni_disponibili[-3:]
+    elif opzione_range == "Ultime 5":
+        stagioni_scelte = stagioni_disponibili[-5:]
+    elif opzione_range == "Ultime 10":
+        stagioni_scelte = stagioni_disponibili[-10:]
+    else:
+        stagioni_scelte = st.sidebar.multiselect(
+            "Seleziona manualmente le stagioni da includere:",
+            options=stagioni_disponibili,
+            default=stagioni_disponibili
+        )
+
     if stagioni_scelte:
         df = df[df["Stagione"].isin(stagioni_scelte)]
-# Debug colonne
+
 with st.expander("✅ Colonne presenti nel dataset", expanded=False):
     st.write(list(df.columns))
-# Controllo colonna essenziale "Home"
+
 if "Home" not in df.columns:
     st.error("⚠️ La colonna 'Home' non esiste nel dataset selezionato.")
     st.stop()
-# Eventuale filtro sulla data
+
 if "Data" in df.columns:
     df["Data"] = pd.to_datetime(df["Data"], format="%Y-%m-%d", errors='coerce')
     today = pd.Timestamp.today().normalize()
     df = df[(df["Data"].isna()) | (df["Data"] <= today)]
-# -------------------------------------------------------
-# ESECUZIONE SEZIONI
-# -------------------------------------------------------
+
 if menu_option == "Macro Stats per Campionato":
     run_macro_stats(df, db_selected)
 elif menu_option == "Statistiche per Squadre":
