@@ -590,17 +590,20 @@ def run_pre_match(df, db_selected):
             # 🧠 EV OVER / UNDER 2.5
             # -------------------------------------------------------
             
+        # -------------------------------------------------------
+        # 🧠 Expected Value (EV) Manuale - Allineato su una riga
+        # -------------------------------------------------------
         st.markdown("## 🧠 Expected Value (EV) Manuale")
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            quota_ov15 = st.number_input("Quota Live per Over 1.5", min_value=1.01, step=0.01, value=2.00)
+            quota_ov15 = st.number_input("Quota Live per Over 1.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov15")
         with col2:
-            quota_ov25 = st.number_input("Quota Live per Over 2.5", min_value=1.01, step=0.01, value=2.00)
+            quota_ov25 = st.number_input("Quota Live per Over 2.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov25")
         with col3:
-            quota_ov35 = st.number_input("Quota Live per Over 3.5", min_value=1.01, step=0.01, value=2.00)
+            quota_ov35 = st.number_input("Quota Live per Over 3.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov35")
         with col4:
-            quota_btts = st.number_input("Quota Live per BTTS", min_value=1.01, step=0.01, value=2.00)
+            quota_btts = st.number_input("Quota Live per BTTS", min_value=1.01, step=0.01, value=2.00, key="quota_ev_btts")
 
         ev_data = [
             {"Mercato": "Over 1.5", "Quota": quota_ov15},
@@ -623,67 +626,6 @@ def run_pre_match(df, db_selected):
             })
 
         st.dataframe(pd.DataFrame(ev_table), use_container_width=True)
-    
-
-else:
-            st.warning("⚠️ Nessuna partita valida trovata per il calcolo ROI Over/Under.")
 
 
 
-# -------------------------------------------------------
-# CORRECT SCORE EV
-# -------------------------------------------------------
-st.markdown("---")
-st.header("📊 Analisi Correct Score EV")
-
-squadra_casa = st.session_state.get("squadra_casa")
-squadra_ospite = st.session_state.get("squadra_ospite")
-label = st.session_state.get("label_corrente")
-
-if not squadra_casa or not squadra_ospite or not label:
-    st.warning("⚠️ Seleziona prima le squadre e le quote nella sezione 'Confronto Pre Match'.")
-else:
-    st.markdown(f"**Match:** {squadra_casa} vs {squadra_ospite}")
-    st.markdown(f"**Label attivo:** `{label}`")
-
-    filtered_df = df.copy()
-    filtered_df["Label"] = filtered_df.apply(label_match, axis=1)
-    filtered_df = filtered_df[filtered_df["Label"] == label]
-    filtered_df = filtered_df.dropna(subset=["Home Goal FT", "Away Goal FT"])
-
-    if filtered_df.empty:
-        st.warning("⚠️ Nessuna partita trovata per questo Label.")
-    else:
-        filtered_df["Correct Score"] = (
-            filtered_df["Home Goal FT"].astype(int).astype(str)
-            + "-"
-            + filtered_df["Away Goal FT"].astype(int).astype(str)
-        )
-
-        cs_counts = filtered_df["Correct Score"].value_counts().reset_index()
-        cs_counts.columns = ["Correct Score", "Count"]
-        cs_counts["%"] = (cs_counts["Count"] / cs_counts["Count"].sum()) * 100
-        cs_counts = cs_counts.head(6)
-
-        def calculate_ev(prob, quota):
-            try:
-                quota = float(quota)
-                ev = round((prob * quota) - 100, 2)
-                return f"🟢 {ev}%" if ev > 0 else f"🔴 {ev}%"
-            except:
-                return ""
-
-        cs_counts["Quota"] = ""
-        cs_counts["EV"] = ""
-
-        for i in cs_counts.index:
-            quota_input = st.text_input(f"Quota per {cs_counts.at[i, 'Correct Score']}", key=f"quota_cs_{i}")
-            cs_counts.at[i, "Quota"] = quota_input
-            cs_counts.at[i, "EV"] = calculate_ev(cs_counts.at[i, "%"], quota_input)
-
-        st.dataframe(cs_counts, use_container_width=True)
-
-# -------------------------------------------------------
-# 📈 ROI & EV LIVE - Over e BTTS
-# -------------------------------------------------------
-st.markdown("---")
