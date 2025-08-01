@@ -20,6 +20,8 @@ def run_mappa_leghe_supabase():
                 st.error("❌ La tabella deve contenere le colonne 'excel_country', 'excel_league' e 'db_league_code'.")
                 return
 
+            df["lookup_key"] = df["excel_country"].astype(str).str.strip().str.upper() + "__" + df["excel_league"].astype(str).str.strip().str.upper()
+
             st.success("✅ Dati correttamente caricati da Supabase.")
             st.dataframe(df)
 
@@ -37,14 +39,15 @@ def run_mappa_leghe_supabase():
                     st.error("❌ Il file deve contenere le colonne 'excel_country', 'excel_league', 'db_league_code'.")
                     return
 
+                df["excel_country"] = df["excel_country"].astype(str).str.strip().str.upper()
+                df["excel_league"] = df["excel_league"].astype(str).str.strip().str.upper()
+                df["lookup_key"] = df["excel_country"] + "__" + df["excel_league"]
+
                 st.success("✅ File caricato correttamente.")
                 st.dataframe(df)
 
                 if st.button("📄 Salva su Supabase"):
-                    # Elimina i dati esistenti
                     supabase.table("league_mapping").delete().neq("id", 0).execute()
-
-                    # Inserisci i nuovi dati (a blocchi di 50)
                     insert_data = df.to_dict(orient="records")
                     for chunk in [insert_data[i:i + 50] for i in range(0, len(insert_data), 50)]:
                         supabase.table("league_mapping").insert(chunk).execute()
