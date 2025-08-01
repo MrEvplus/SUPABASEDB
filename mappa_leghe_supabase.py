@@ -1,13 +1,12 @@
-
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from utils import SUPABASE_URL, SUPABASE_KEY, load_data_from_supabase
+from utils import SUPABASE_URL, SUPABASE_KEY
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def run_mappa_leghe_supabase():
-    st.header("🗺️ Mappatura Manuale Campionati su Supabase")
+    st.header("🗾️ Mappatura Manuale Campionati su Supabase")
 
     origine = st.radio("Origine dati:", ["Supabase", "Upload Manuale"], index=0)
 
@@ -17,8 +16,8 @@ def run_mappa_leghe_supabase():
             records = response.data
             df = pd.DataFrame(records)
 
-            if df.empty or "country" not in df.columns or "league" not in df.columns:
-                st.error("❌ Il file deve contenere le colonne 'country' e 'league'.")
+            if df.empty or not all(col in df.columns for col in ["excel_country", "excel_league", "db_league_code"]):
+                st.error("❌ La tabella deve contenere le colonne 'excel_country', 'excel_league' e 'db_league_code'.")
                 return
 
             st.success("✅ Dati correttamente caricati da Supabase.")
@@ -28,22 +27,24 @@ def run_mappa_leghe_supabase():
             st.error(f"Errore durante il recupero dei dati da Supabase: {e}")
 
     else:
-        uploaded_file = st.file_uploader("Carica un file CSV con colonne 'country' e 'league':", type="csv")
+        uploaded_file = st.file_uploader(
+            "Carica un file CSV con colonne 'excel_country', 'excel_league', 'db_league_code':", type="csv")
         if uploaded_file:
             try:
                 df = pd.read_csv(uploaded_file)
-                if "country" not in df.columns or "league" not in df.columns:
-                    st.error("❌ Il file deve contenere le colonne 'country' e 'league'.")
+                required_cols = ["excel_country", "excel_league", "db_league_code"]
+                if not all(col in df.columns for col in required_cols):
+                    st.error("❌ Il file deve contenere le colonne 'excel_country', 'excel_league', 'db_league_code'.")
                     return
 
                 st.success("✅ File caricato correttamente.")
                 st.dataframe(df)
 
-                if st.button("📤 Salva su Supabase"):
-                    # Cancella prima i dati esistenti (opzionale)
-                    supabase.table("league_mapping").delete().neq("code", "").execute()
+                if st.button("📄 Salva su Supabase"):
+                    # Elimina i dati esistenti
+                    supabase.table("league_mapping").delete().neq("id", 0).execute()
 
-                    # Inserisci nuovi dati
+                    # Inserisci i nuovi dati (a blocchi di 50)
                     insert_data = df.to_dict(orient="records")
                     for chunk in [insert_data[i:i + 50] for i in range(0, len(insert_data), 50)]:
                         supabase.table("league_mapping").insert(chunk).execute()
