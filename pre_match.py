@@ -539,12 +539,3 @@ else:
             cs_counts.at[i, "EV"] = calculate_ev(cs_counts.at[i, "%"], quota_input)
 
         st.dataframe(cs_counts, use_container_width=True)
-
-# ===============================
-# 📊 TABELLA AGGIUNTIVA OVER + BTTS
-# ===============================
-if "odd over 1,5" in df.columns and "odd over 2,5" in df.columns and "odd over 3,5" in df.columns:
-    try:
-        mostra_tabella_roi_completa(df, label, squadra_casa, squadra_ospite)
-    except Exception as e:
-        st.warning(f"Errore durante il calcolo ROI tabella goal e BTTS: {e}")
