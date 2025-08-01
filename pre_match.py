@@ -593,39 +593,64 @@ def run_pre_match(df, db_selected):
         # -------------------------------------------------------
         # 🧠 Expected Value (EV) Manuale - Allineato su una riga
         # -------------------------------------------------------
+        
+        # -------------------------------------------------------
+        # 🧠 Expected Value (EV) Manuale - 2 righe, 2 colonne
+        # -------------------------------------------------------
         st.markdown("## 🧠 Expected Value (EV) Manuale")
 
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
+        riga1_col1, riga1_col2 = st.columns(2)
+        with riga1_col1:
             quota_ov15 = st.number_input("Quota Live per Over 1.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov15")
-        with col2:
+        with riga1_col2:
             quota_ov25 = st.number_input("Quota Live per Over 2.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov25")
-        with col3:
+
+        riga2_col1, riga2_col2 = st.columns(2)
+        with riga2_col1:
             quota_ov35 = st.number_input("Quota Live per Over 3.5", min_value=1.01, step=0.01, value=2.00, key="quota_ev_ov35")
-        with col4:
+        with riga2_col2:
             quota_btts = st.number_input("Quota Live per BTTS", min_value=1.01, step=0.01, value=2.00, key="quota_ev_btts")
+        # Probabilità storica automatica
+        if not df_label.empty:
+            pct_ov15 = round((df_label["Home Goal FT"] + df_label["Away Goal FT"] > 1.5).mean() * 100, 1)
+            pct_ov25 = round((df_label["Home Goal FT"] + df_label["Away Goal FT"] > 2.5).mean() * 100, 1)
+            pct_ov35 = round((df_label["Home Goal FT"] + df_label["Away Goal FT"] > 3.5).mean() * 100, 1)
+            pct_btts = round(((df_label["Home Goal FT"] > 0) & (df_label["Away Goal FT"] > 0)).mean() * 100, 1)
+        else:
+            pct_ov15 = pct_ov25 = pct_ov35 = pct_btts = 0.0
 
         ev_data = [
-            {"Mercato": "Over 1.5", "Quota": quota_ov15},
-            {"Mercato": "Over 2.5", "Quota": quota_ov25},
-            {"Mercato": "Over 3.5", "Quota": quota_ov35},
-            {"Mercato": "BTTS", "Quota": quota_btts}
-        ]
+            {"Mercato": "Over 1.5", "Quota": quota_ov15, "Prob": pct_ov15},
+            {"Mercato": "Over 2.5", "Quota": quota_ov25, "Prob": pct_ov25},
+            {"Mercato": "Over 3.5", "Quota": quota_ov35, "Prob": pct_ov35},
+            {"Mercato": "BTTS", "Quota": quota_btts, "Prob": pct_btts}
+]
 
-        ev_table = []
-        for row in ev_data:
-            prob = 0.0
-            ev = round((row["Quota"] * (prob / 100)) - 1, 2)
-            nota = "🟢 EV+" if ev > 0 else "🔴 EV-" if ev < 0 else "⚪️ Neutro"
-            ev_table.append({
-                "Mercato": row["Mercato"],
-                "Quota Inserita": row["Quota"],
-                "Probabilità Storica": f"{prob:.1f}%",
-                "EV": ev,
-                "Note": nota
-            })
+ev_table = []
+for row in ev_data:
+    ev = round((row["Quota"] * (row["Prob"] / 100)) - 1, 2)
+    nota = "🟢 EV+" if ev > 0 else "🔴 EV-" if ev < 0 else "⚪️ Neutro"
+    ev_table.append({
+        "Mercato": row["Mercato"],
+        "Quota Inserita": row["Quota"],
+        "Probabilità Storica": f"{row['Prob']:.1f}%",
+        "EV": ev,
+        "Note": nota
+    })
+for row in ev_data:
+    prob = 0.0
+    ev = round((row["Quota"] * (prob / 100)) - 1, 2)
+    nota = "🟢 EV+" if ev > 0 else "🔴 EV-" if ev < 0 else "⚪️ Neutro"
+    ev_table.append({
+        "Mercato": row["Mercato"],
+        "Quota Inserita": row["Quota"],
+        "Probabilità Storica": f"{prob:.1f}%",
+        "EV": ev,
+        "Note": nota
+    })
 
-        st.dataframe(pd.DataFrame(ev_table), use_container_width=True)
+st.dataframe(pd.DataFrame(ev_table), use_container_width=True)
+
 
 
 
