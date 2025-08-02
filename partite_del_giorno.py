@@ -67,20 +67,18 @@ def run_partite_del_giorno(df, db_selected):
         st.markdown("### 📋 Lista Partite del Giorno")
 
         colonne_presenti = pd.Series(df_today.columns).str.lower()
-        col_data = next((c for c in colonne_presenti if "data" in c or "datameci" in c), None)
-        col_ora = next((c for c in colonne_presenti if "orario" in c or "orameci" in c), None)
+        col_data = next((c for c in colonne_presenti if "datameci" in c or "data" in c), None)
+        col_ora = next((c for c in colonne_presenti if "orameci" in c or "orario" in c), None)
         col_league = next((c for c in colonne_presenti if "league" in c or "etapa" in c), None)
 
         if col_data:
-            df_today["Data Match"] = pd.to_datetime(df_today[col_data], errors="coerce")
+            df_today["Data Match"] = pd.to_datetime(df_today[col_data], errors="coerce", dayfirst=True)
         else:
             df_today["Data Match"] = pd.NaT
 
         if col_ora:
-            try:
-                df_today["Orario"] = pd.to_datetime(df_today[col_ora], errors="coerce").dt.time
-            except:
-                df_today["Orario"] = ""
+            df_today[col_ora] = df_today[col_ora].astype(str).str.zfill(4)
+            df_today["Orario"] = df_today[col_ora].str[:2] + ":" + df_today[col_ora].str[2:]
         else:
             df_today["Orario"] = ""
 
