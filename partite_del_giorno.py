@@ -62,8 +62,30 @@ def run_partite_del_giorno(df, db_selected):
                 st.stop()
 
         df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
-        matches = df_today["match_str"].tolist()
 
+        # ✅ MOSTRA LISTA PARTITE CON CAMPIONATO E DATA
+        st.markdown("### 📋 Lista Partite del Giorno")
+
+        colonne_presenti = df_today.columns.str.lower()
+        col_data = next((c for c in colonne_presenti if "data" in c or "datameci" in c), None)
+        col_league = next((c for c in colonne_presenti if "league" in c or "etapa" in c), None)
+
+        if col_data:
+            df_today["Data Match"] = pd.to_datetime(df_today[col_data], errors="coerce").dt.strftime("%Y-%m-%d %H:%M")
+        else:
+            df_today["Data Match"] = ""
+
+        if col_league:
+            df_today["Campionato"] = df_today[col_league]
+        else:
+            df_today["Campionato"] = df_today.get("country", "N/A")
+
+        df_lista = df_today[["Campionato", "Data Match", "Home", "Away"]].copy()
+        df_lista.columns = ["Campionato", "Data", "Squadra Casa", "Squadra Ospite"]
+        st.dataframe(df_lista, use_container_width=True)
+
+        # Dropdown partita
+        matches = df_today["match_str"].tolist()
         selected = st.selectbox("Seleziona la partita:", options=matches, key="selected_match")
 
         if selected:
@@ -81,7 +103,6 @@ def run_partite_del_giorno(df, db_selected):
                 st.warning(f"⚠️ Mapping non trovato per: {excel_country} / {excel_league}")
                 return
 
-            # Aggiorna dinamicamente db_selected con il mapping corretto
             db_selected = match_db
 
             st.info(f"🔍 lookup_key: {lookup_key}")
