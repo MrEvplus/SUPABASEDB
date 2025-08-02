@@ -84,6 +84,8 @@ def run_partite_del_giorno(df, db_selected):
             # Aggiorna dinamicamente db_selected con il mapping corretto
             db_selected = match_db
 
+            st.session_state["selected_country"] = db_selected  # NEW: auto-set campionato nella dashboard
+
             st.info(f"🔍 lookup_key: {lookup_key}")
             st.info(f"📌 db_league_code trovato: {match_db}")
 
