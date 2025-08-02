@@ -35,7 +35,7 @@ st.set_page_config(
     page_title="Trading Dashboard",
     layout="wide"
 )
-st.sidebar.title("Trading Dashboard")
+st.sidebar.title("📊 Trading Dashboard")
 
 # -------------------------------------------------------
 # MENU PRINCIPALE
