@@ -121,10 +121,13 @@ def run_partite_del_giorno(df, db_selected):
             st.info(f"📌 db_league_code trovato: {match_db}")
 
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
-            run_macro_stats(df, match_db)
-            run_team_stats(df, match_db)
-            run_pre_match(df, match_db)
-            run_correct_score_ev(df, match_db)
+
+            df_filtered = df[df["country"].str.upper() == match_db.upper()]
+
+            run_macro_stats(df_filtered, match_db)
+            run_team_stats(df_filtered, match_db)
+            run_pre_match(df_filtered, match_db)
+            run_correct_score_ev(df_filtered, match_db)
 
             if st.button("🔙 Torna indietro"):
                 del st.session_state["selected_match"]
