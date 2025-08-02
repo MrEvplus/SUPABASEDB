@@ -18,6 +18,8 @@ from ai_inference import run_ai_inference
 from analisi_live_minuto import run_live_minute_analysis
 from partite_del_giorno import run_partite_del_giorno
 from mappa_leghe_supabase import run_mappa_leghe_supabase
+from reverse_engineering import run_reverse_engineering
+
 
 
 def get_league_mapping():
