@@ -122,12 +122,22 @@ def run_partite_del_giorno(df, db_selected):
 
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
 
-            df_filtered = df[df["country"].str.upper() == match_db.upper()]
+            # ✅ FILTRA DB COME NELLA PAGINA 'Macro Stats per Campionato'
+            df_filtered = df.copy()
 
-            run_macro_stats(df_filtered, match_db)
-            run_team_stats(df_filtered, match_db)
-            run_pre_match(df_filtered, match_db)
-            run_correct_score_ev(df_filtered, match_db)
+            df_filtered["country"] = df_filtered["country"].astype(str).str.strip().str.upper()
+            db_selected = db_selected.strip().upper()
+
+            if db_selected not in df_filtered["country"].unique():
+                st.warning(f"⚠️ Il campionato selezionato '{db_selected}' non è presente nel database.")
+                return
+
+            df_filtered = df_filtered[df_filtered["country"] == db_selected]
+
+            run_macro_stats(df_filtered, db_selected)
+            run_team_stats(df_filtered, db_selected)
+            run_pre_match(df_filtered, db_selected)
+            run_correct_score_ev(df_filtered, db_selected)
 
             if st.button("🔙 Torna indietro"):
                 del st.session_state["selected_match"]
