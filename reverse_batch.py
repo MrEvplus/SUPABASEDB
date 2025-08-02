@@ -35,9 +35,8 @@ def run_reverse_batch(df):
         if pd.isna(quota_over) or pd.isna(quota_under):
             continue
 
-        df_passato = df[df["Data"] < data_match].copy()
-        df_passato["Label"] = df_passato.apply(label_match, axis=1)
-        df_filtrato = df_passato[df_passato["Label"] == label]
+        df["Label"] = df.apply(label_match, axis=1)
+        df_passato = df[(df["Data"] < data_match) & (df["Label"] == label)].copy()
 
         if df_filtrato.empty:
             continue
