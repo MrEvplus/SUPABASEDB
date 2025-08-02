@@ -5,9 +5,7 @@ from macros import run_macro_stats
 from squadre import run_team_stats
 from pre_match import run_pre_match
 from correct_score_ev_sezione import run_correct_score_ev
-from analisi_live_minuto import run_live_minute_analysis
 from supabase import create_client
-
 
 def get_league_mapping():
     try:
@@ -21,7 +19,6 @@ def get_league_mapping():
     except Exception as e:
         st.error(f"Errore caricamento mapping: {e}")
         return {}
-
 
 def run_partite_del_giorno(df, db_selected):
     st.title("Partite del Giorno - Upload File")
@@ -65,40 +62,8 @@ def run_partite_del_giorno(df, db_selected):
                 st.stop()
 
         df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
-
-        st.markdown("### 📋 Lista Partite del Giorno")
-
-        colonne_presenti = pd.Series(df_today.columns).str.lower()
-        col_data = next((c for c in colonne_presenti if "datameci" in c or "data" in c), None)
-        col_ora = next((c for c in colonne_presenti if "orameci" in c or "orario" in c), None)
-        col_league = next((c for c in colonne_presenti if "league" in c or "etapa" in c), None)
-
-        if col_data:
-            df_today["Data Match"] = pd.to_datetime(df_today[col_data], errors="coerce", dayfirst=True)
-        else:
-            df_today["Data Match"] = pd.NaT
-
-        if col_ora:
-            df_today[col_ora] = df_today[col_ora].astype(str).str.zfill(4)
-            df_today["Orario"] = df_today[col_ora].str[:2] + ":" + df_today[col_ora].str[2:]
-        else:
-            df_today["Orario"] = ""
-
-        if col_data:
-            df_today["Data Ora"] = df_today["Data Match"].dt.strftime("%Y-%m-%d") + " " + df_today["Orario"].astype(str)
-        else:
-            df_today["Data Ora"] = ""
-
-        if col_league:
-            df_today["Campionato"] = df_today[col_league]
-        else:
-            df_today["Campionato"] = df_today.get("country", "N/A")
-
-        df_lista = df_today[["Campionato", "Data Ora", "Home", "Away"]].copy()
-        df_lista.columns = ["Campionato", "Data", "Squadra Casa", "Squadra Ospite"]
-        st.dataframe(df_lista, use_container_width=True)
-
         matches = df_today["match_str"].tolist()
+
         selected = st.selectbox("Seleziona la partita:", options=matches, key="selected_match")
 
         if selected:
@@ -116,25 +81,17 @@ def run_partite_del_giorno(df, db_selected):
                 st.warning(f"⚠️ Mapping non trovato per: {excel_country} / {excel_league}")
                 return
 
+            # Aggiorna dinamicamente db_selected con il mapping corretto
             db_selected = match_db
 
             st.info(f"🔍 lookup_key: {lookup_key}")
             st.info(f"📌 db_league_code trovato: {match_db}")
 
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
-
-            df_filtered = df.copy()
-            df_filtered["country"] = df_filtered["country"].astype(str).str.strip().str.upper()
-            if excel_country not in df_filtered["country"].unique():
-                st.warning(f"⚠️ Il campionato selezionato '{excel_country}' non è presente nel database.")
-                return
-            df_filtered = df_filtered[df_filtered["country"] == excel_country]
-
-            run_macro_stats(df_filtered, db_selected)
-            run_team_stats(df_filtered, db_selected)
-            run_pre_match(df_filtered, db_selected)
-            run_correct_score_ev(df_filtered, db_selected)
-            run_live_minute_analysis(df_filtered)
+            run_macro_stats(df, match_db)
+            run_team_stats(df, match_db)
+            run_pre_match(df, match_db)
+            run_correct_score_ev(df, match_db)
 
             if st.button("🔙 Torna indietro"):
                 del st.session_state["selected_match"]
