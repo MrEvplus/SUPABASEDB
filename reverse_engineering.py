@@ -16,15 +16,7 @@ def run_reverse_engineering(df):
         return
 
     st.markdown("### 📋 Partite giocate in quella giornata:")
-    
-    # 🔍 Colonne da mostrare se disponibili
-    columns_to_show = [
-        "Home", "Away", "Odd home", "Odd Draw", "Odd Away",
-        "odd over 2,5", "odd under 2,5", "Home Goal FT", "Away Goal FT"
-    ]
-    columns_available = [col for col in columns_to_show if col in df_giocate.columns]
-    st.dataframe(df_giocate[columns_available], use_container_width=True)
-
+    st.dataframe(df_giocate[["Home", "Away", "Odd home", "Odd Draw", "Odd Away", "Home Goal FT", "Away Goal FT"]], use_container_width=True)
 
     partita_selezionata = st.selectbox("🎯 Seleziona una partita per analisi retrospettiva:",
                                        [f"{row['Home']} vs {row['Away']}" for _, row in df_giocate.iterrows()])
