@@ -43,6 +43,12 @@ def run_single_analysis(df):
     # Esito reale
     st.markdown("---")
     st.subheader("📈 Esito Reale")
+    st.markdown("### 🎯 Quota Over / Under 2.5")
+    col1, col2 = st.columns(2)
+    with col1:
+        quota_over = st.number_input("Quota Over 2.5", min_value=1.01, max_value=10.0, value=st.session_state.get("quota_over", 2.00), step=0.01)
+    with col2:
+        quota_under = st.number_input("Quota Under 2.5", min_value=1.01, max_value=10.0, value=st.session_state.get("quota_under", 1.80), step=0.01)
     st.write(f"🏠 {selected_row['Home']} {selected_row['Home Goal FT']} - {selected_row['Away Goal FT']} {selected_row['Away']}")
 def run_reverse_engineering(df):
     st.title("🧠 Reverse Engineering EV+")
@@ -86,7 +92,6 @@ def run_pattern_analysis(uploaded_df=None):
     st.dataframe(df_filtered, use_container_width=True)
     csv = df_filtered.to_csv(index=False).encode("utf-8")
     st.download_button("💾 Scarica Pattern EV+ CSV", data=csv, file_name="pattern_ev_plus.csv", mime="text/csv")
-        st.markdown("### 🎯 Quota Over / Under 2.5")
         col1, col2 = st.columns(2)
         with col1:
             quota_over = st.number_input("Quota Over 2.5", min_value=1.01, max_value=10.0, value=st.session_state.get("quota_over", 2.00), step=0.01)
