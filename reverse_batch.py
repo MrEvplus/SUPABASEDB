@@ -25,8 +25,8 @@ def run_reverse_batch(df):
         home = row["Home"]
         away = row["Away"]
         label = label_match(row)
-        quota_over = row.get("odd over 2,5", None)
-        quota_under = row.get("odd under 2,5", None)
+        quota_over = row.get("Odd Over 2.5", None)
+        quota_under = row.get("Odd Under 2.5", None)
         gol_home = row.get("Home Goal FT", 0)
         gol_away = row.get("Away Goal FT", 0)
         pos_home = row.get("Posizione Classifica Home", None)
