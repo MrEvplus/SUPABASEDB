@@ -38,10 +38,10 @@ def run_reverse_batch(df):
         df["Label"] = df.apply(label_match, axis=1)
         df_passato = df[(df["Data"] < data_match) & (df["Label"] == label)].copy()
 
-        if df_filtrato.empty:
+        if df_passato.empty:
             continue
 
-        df_validi = df_filtrato.dropna(subset=["Home Goal FT", "Away Goal FT"])
+        df_validi = df_passato.dropna(subset=["Home Goal FT", "Away Goal FT"])
         if df_validi.empty:
             continue
 
