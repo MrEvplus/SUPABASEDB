@@ -116,3 +116,12 @@ def run_pattern_analysis(uploaded_df=None):
 
     csv = df_filtered.to_csv(index=False).encode("utf-8")
     st.download_button("💾 Scarica Pattern EV+ CSV", data=csv, file_name="pattern_ev_plus.csv", mime="text/csv")
+        st.markdown("### 🎯 Quota Over / Under 2.5")
+        col1, col2 = st.columns(2)
+        with col1:
+            quota_over = st.number_input("Quota Over 2.5", min_value=1.01, max_value=10.0, value=st.session_state.get("quota_over", 2.00), step=0.01)
+        with col2:
+            quota_under = st.number_input("Quota Under 2.5", min_value=1.01, max_value=10.0, value=st.session_state.get("quota_under", 1.80), step=0.01)
+    
+
+
