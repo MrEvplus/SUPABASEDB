@@ -68,7 +68,6 @@ else:
     df, db_selected = load_data_from_file()
     league_dict = get_league_mapping()
     db_selected = league_dict.get(db_selected, db_selected)
-
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
 if "squadra_ospite" not in st.session_state:
@@ -80,10 +79,6 @@ else:
         st.session_state["squadra_casa"] = ""
         st.session_state["squadra_ospite"] = ""
         st.session_state["campionato_corrente"] = db_selected
-
-# Imposta il campionato in automatico nella barra laterale
-if "campionato" not in st.session_state:
-    st.session_state["campionato"] = db_selected
 
 # -------------------------------------------------------
 # MAPPING COLONNE COMPLETO E PULIZIA
@@ -209,17 +204,17 @@ if "Data" in df.columns:
     df = df[(df["Data"].isna()) | (df["Data"] <= today)]
 
 if menu_option == "Macro Stats per Campionato":
-    run_macro_stats(df, st.session_state["campionato"])
+    run_macro_stats(df, db_selected)
 elif menu_option == "Statistiche per Squadre":
-    run_team_stats(df, st.session_state["campionato"])
+    run_team_stats(df, db_selected)
 elif menu_option == "Confronto Pre Match":
-    run_pre_match(df, st.session_state["campionato"])
+    run_pre_match(df, db_selected)
 elif menu_option == "Correct Score EV":
-    run_correct_score_ev(df, st.session_state["campionato"])
+    run_correct_score_ev(df, db_selected)
 elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)
 elif menu_option == "Partite del Giorno":
-    run_partite_del_giorno(df, st.session_state["campionato"])
+    run_partite_del_giorno(df, db_selected)
 elif menu_option == "Mappatura Campionati":
     run_mappa_leghe_supabase()
-    run_partite_del_giorno(df, st.session_state["campionato"])
+    run_partite_del_giorno(df, db_selected)
