@@ -165,7 +165,7 @@ def run_pre_match(df, db_selected):
             "Seleziona Squadra Casa",
             options=teams_available,
             index=teams_available.index(st.session_state["squadra_casa"]) if st.session_state["squadra_casa"] in teams_available else 0,
-            key="squadra_casa"
+            key=f"squadra_casa_{db_selected}"
         )
 
     with col2:
@@ -173,7 +173,7 @@ def run_pre_match(df, db_selected):
             "Seleziona Squadra Ospite",
             options=teams_available,
             index=teams_available.index(st.session_state["squadra_ospite"]) if st.session_state["squadra_ospite"] in teams_available else 0,
-            key="squadra_ospite"
+            key=f"squadra_ospite_{db_selected}"
         )
 
     col1, col2, col3 = st.columns(3)
