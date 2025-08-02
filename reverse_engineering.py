@@ -39,6 +39,10 @@ def run_reverse_engineering(df):
     st.session_state["squadra_ospite"] = selected_row["Away"]
     st.session_state["quota_home"] = selected_row.get("Odd home", 2.00)
     st.session_state["quota_draw"] = selected_row.get("Odd Draw", 3.20)
+    st.session_state["quota_over"] = selected_row.get("odd over 2,5", 2.00)
+    st.session_state["quota_under"] = selected_row.get("odd under 2,5", 1.80)
+
+    st.session_state["quota_draw"] = selected_row.get("Odd Draw", 3.20)
     st.session_state["quota_away"] = selected_row.get("Odd Away", 3.00)
     st.session_state["label_corrente"] = label_match(selected_row)
 
