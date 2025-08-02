@@ -20,7 +20,7 @@ def run_single_analysis(df):
     # Colonne dinamiche per evitare KeyError
     columns_to_show = [
         "Home", "Away", "Odd home", "Odd Draw", "Odd Away",
-        "odd over 2,5", "odd under 2,5", "Home Goal FT", "Away Goal FT"
+        "Odd Over 2.5", "Odd Under 2.5", "Home Goal FT", "Away Goal FT"
     ]
     columns_available = [col for col in columns_to_show if col in df_giocate.columns]
     st.dataframe(df_giocate[columns_available], use_container_width=True)
@@ -46,8 +46,8 @@ def run_single_analysis(df):
     st.session_state["quota_home"] = selected_row.get("Odd home", 2.00)
     st.session_state["quota_draw"] = selected_row.get("Odd Draw", 3.20)
     st.session_state["quota_away"] = selected_row.get("Odd Away", 3.00)
-    st.session_state["quota_over"] = selected_row.get("odd over 2,5", 2.00)
-    st.session_state["quota_under"] = selected_row.get("odd under 2,5", 1.80)
+    st.session_state["quota_over"] = selected_row.get("Odd Over 2.5", 2.00)
+    st.session_state["quota_under"] = selected_row.get("Odd Under 2.5", 1.80)
     st.session_state["label_corrente"] = label_match(selected_row)
 
     st.markdown(f"**🎯 Label calcolata:** `{st.session_state['label_corrente']}`")
