@@ -52,14 +52,13 @@ def run_partite_del_giorno(df, db_selected):
         if "txtechipa1" in df_today.columns and "txtechipa2" in df_today.columns:
             df_today["Home"] = df_today["txtechipa1"]
             df_today["Away"] = df_today["txtechipa2"]
+        elif "codechipa1" in df_today.columns and "codechipa2" in df_today.columns:
+            df_today["Home"] = df_today["codechipa1"]
+            df_today["Away"] = df_today["codechipa2"]
 
         if "Home" not in df_today.columns or "Away" not in df_today.columns:
-            if "codechipa1" in df_today.columns and "codechipa2" in df_today.columns:
-                df_today["Home"] = df_today["codechipa1"]
-                df_today["Away"] = df_today["codechipa2"]
-            else:
-                st.error("⚠️ Il file deve contenere 'txtechipa1'/'txtechipa2' o 'codechipa1'/'codechipa2'.")
-                st.stop()
+            st.error("⚠️ Il file deve contenere 'txtechipa1'/'txtechipa2' o 'codechipa1'/'codechipa2'.")
+            st.stop()
 
         df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
         matches = df_today["match_str"].tolist()
@@ -81,18 +80,20 @@ def run_partite_del_giorno(df, db_selected):
                 st.warning(f"⚠️ Mapping non trovato per: {excel_country} / {excel_league}")
                 return
 
-            # Aggiorna dinamicamente db_selected con il mapping corretto
             db_selected = match_db
-
-            st.session_state["selected_country"] = db_selected  # NEW: auto-set campionato nella dashboard
+            st.session_state["campionato_corrente"] = db_selected
 
             st.info(f"🔍 lookup_key: {lookup_key}")
             st.info(f"📌 db_league_code trovato: {match_db}")
-
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
+
             run_macro_stats(df, match_db)
             run_team_stats(df, match_db)
-            run_pre_match(df, match_db)
+
+            # ⚠️ Qui risolviamo l’errore di chiave duplicata nel pre_match
+            unique_key_suffix = f"{casa}_{ospite}".replace(" ", "_").lower()
+            run_pre_match(df, match_db + f"__{unique_key_suffix}")  # passa chiave unica per evitare duplicati
+
             run_correct_score_ev(df, match_db)
 
             if st.button("🔙 Torna indietro"):
