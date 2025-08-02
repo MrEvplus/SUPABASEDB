@@ -217,7 +217,7 @@ elif menu_option == "Analisi Live da Minuto":
     run_live_minute_analysis(df)
 elif menu_option == "Partite del Giorno":
     run_partite_del_giorno(df, db_selected)
-elif menu_option == "📅 Reverse Engineering":
+elif menu_option == "🧠 Reverse Engineering EV+":
     run_reverse_engineering(df)
 
 
