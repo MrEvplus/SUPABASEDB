@@ -35,7 +35,7 @@ st.set_page_config(
     page_title="Trading Dashboard",
     layout="wide"
 )
-st.sidebar.title("📊 Trading Dashboard")
+st.sidebar.title("\ud83d\udcca Trading Dashboard")
 
 # -------------------------------------------------------
 # MENU PRINCIPALE
@@ -68,6 +68,16 @@ else:
     df, db_selected = load_data_from_file()
     league_dict = get_league_mapping()
     db_selected = league_dict.get(db_selected, db_selected)
+
+# ---------------------------------------------
+# AGGIORNA CAMPIONATO SELEZIONATO IN AUTOMATICO
+# ---------------------------------------------
+if "campionato" not in st.session_state:
+    st.session_state["campionato"] = db_selected
+else:
+    if st.session_state["campionato"] != db_selected:
+        st.session_state["campionato"] = db_selected
+
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
 if "squadra_ospite" not in st.session_state:
@@ -191,11 +201,11 @@ if "Stagione" in df.columns:
     if stagioni_scelte:
         df = df[df["Stagione"].isin(stagioni_scelte)]
 
-with st.expander("✅ Colonne presenti nel dataset", expanded=False):
+with st.expander("\u2705 Colonne presenti nel dataset", expanded=False):
     st.write(list(df.columns))
 
 if "Home" not in df.columns:
-    st.error("⚠️ La colonna 'Home' non esiste nel dataset selezionato.")
+    st.error("\u26a0\ufe0f La colonna 'Home' non esiste nel dataset selezionato.")
     st.stop()
 
 if "Data" in df.columns:
@@ -218,3 +228,4 @@ elif menu_option == "Partite del Giorno":
 elif menu_option == "Mappatura Campionati":
     run_mappa_leghe_supabase()
     run_partite_del_giorno(df, db_selected)
+
