@@ -50,6 +50,7 @@ menu_option = st.sidebar.radio(
         "Analisi Live da Minuto",
         "Partite del Giorno",
         "Mappatura Campionati"
+        "📅 Reverse Engineering"
     ]
 )
 
@@ -218,4 +219,8 @@ elif menu_option == "Partite del Giorno":
 elif menu_option == "Mappatura Campionati":
     run_mappa_leghe_supabase()
     run_partite_del_giorno(df, db_selected)
+elif menu_option == "📅 Reverse Engineering":
+    from reverse_engineering import run_reverse_engineering
+    run_reverse_engineering(df)
+
 
