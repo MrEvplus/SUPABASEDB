@@ -68,19 +68,33 @@ def run_partite_del_giorno(df, db_selected):
 
         colonne_presenti = pd.Series(df_today.columns).str.lower()
         col_data = next((c for c in colonne_presenti if "data" in c or "datameci" in c), None)
+        col_ora = next((c for c in colonne_presenti if "orario" in c or "orameci" in c), None)
         col_league = next((c for c in colonne_presenti if "league" in c or "etapa" in c), None)
 
         if col_data:
-            df_today["Data Match"] = pd.to_datetime(df_today[col_data], errors="coerce").dt.strftime("%Y-%m-%d %H:%M")
+            df_today["Data Match"] = pd.to_datetime(df_today[col_data], errors="coerce")
         else:
-            df_today["Data Match"] = ""
+            df_today["Data Match"] = pd.NaT
+
+        if col_ora:
+            try:
+                df_today["Orario"] = pd.to_datetime(df_today[col_ora], errors="coerce").dt.time
+            except:
+                df_today["Orario"] = ""
+        else:
+            df_today["Orario"] = ""
+
+        if col_data:
+            df_today["Data Ora"] = df_today["Data Match"].dt.strftime("%Y-%m-%d") + " " + df_today["Orario"].astype(str)
+        else:
+            df_today["Data Ora"] = ""
 
         if col_league:
             df_today["Campionato"] = df_today[col_league]
         else:
             df_today["Campionato"] = df_today.get("country", "N/A")
 
-        df_lista = df_today[["Campionato", "Data Match", "Home", "Away"]].copy()
+        df_lista = df_today[["Campionato", "Data Ora", "Home", "Away"]].copy()
         df_lista.columns = ["Campionato", "Data", "Squadra Casa", "Squadra Ospite"]
         st.dataframe(df_lista, use_container_width=True)
 
