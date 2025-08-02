@@ -21,12 +21,13 @@ from mappa_leghe_supabase import run_mappa_leghe_supabase
 from reverse_engineering import run_reverse_engineering
 
 
-
 def get_league_mapping():
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         data = supabase.table("league_mapping").select("*").execute().data
-        return {r["code"]: r["league_name"] for r in data}
+        mapping = {r["code"]: r["league_name"] for r in data}
+        mapping["Tutti"] = "Tutti i Campionati"
+        return mapping
     except:
         return {}
 
@@ -70,6 +71,7 @@ else:
     df, db_selected = load_data_from_file()
     league_dict = get_league_mapping()
     db_selected = league_dict.get(db_selected, db_selected)
+
 if "squadra_casa" not in st.session_state:
     st.session_state["squadra_casa"] = ""
 if "squadra_ospite" not in st.session_state:
@@ -219,5 +221,3 @@ elif menu_option == "Partite del Giorno":
     run_partite_del_giorno(df, db_selected)
 elif menu_option == "🧠 Reverse Engineering EV+":
     run_reverse_engineering(df)
-
-
