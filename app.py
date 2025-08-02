@@ -51,7 +51,7 @@ menu_option = st.sidebar.radio(
         "Correct Score EV",
         "Analisi Live da Minuto",
         "Partite del Giorno",
-        "📅 Reverse Engineering"
+        "🧠 Reverse Engineering EV+"
     ]
 )
 
@@ -218,7 +218,6 @@ elif menu_option == "Analisi Live da Minuto":
 elif menu_option == "Partite del Giorno":
     run_partite_del_giorno(df, db_selected)
 elif menu_option == "📅 Reverse Engineering":
-    from reverse_engineering import run_reverse_engineering
     run_reverse_engineering(df)
 
 
