@@ -5,7 +5,9 @@ from macros import run_macro_stats
 from squadre import run_team_stats
 from pre_match import run_pre_match
 from correct_score_ev_sezione import run_correct_score_ev
+from analisi_live_minuto import run_live_minute_analysis
 from supabase import create_client
+
 
 def get_league_mapping():
     try:
@@ -19,6 +21,7 @@ def get_league_mapping():
     except Exception as e:
         st.error(f"Errore caricamento mapping: {e}")
         return {}
+
 
 def run_partite_del_giorno(df, db_selected):
     st.title("Partite del Giorno - Upload File")
@@ -63,7 +66,6 @@ def run_partite_del_giorno(df, db_selected):
 
         df_today["match_str"] = df_today.apply(lambda r: f"{r['Home']} vs {r['Away']}", axis=1)
 
-        # ✅ MOSTRA LISTA PARTITE CON CAMPIONATO E DATA
         st.markdown("### 📋 Lista Partite del Giorno")
 
         colonne_presenti = pd.Series(df_today.columns).str.lower()
@@ -96,7 +98,6 @@ def run_partite_del_giorno(df, db_selected):
         df_lista.columns = ["Campionato", "Data", "Squadra Casa", "Squadra Ospite"]
         st.dataframe(df_lista, use_container_width=True)
 
-        # Dropdown partita
         matches = df_today["match_str"].tolist()
         selected = st.selectbox("Seleziona la partita:", options=matches, key="selected_match")
 
@@ -122,22 +123,18 @@ def run_partite_del_giorno(df, db_selected):
 
             st.markdown(f"### Statistiche per {casa} vs {ospite} ({match_db})")
 
-            # ✅ FILTRA DB COME NELLA PAGINA 'Macro Stats per Campionato'
             df_filtered = df.copy()
-
             df_filtered["country"] = df_filtered["country"].astype(str).str.strip().str.upper()
-            db_selected = db_selected.strip().upper()
-
-            if db_selected not in df_filtered["country"].unique():
-                st.warning(f"⚠️ Il campionato selezionato '{db_selected}' non è presente nel database.")
+            if excel_country not in df_filtered["country"].unique():
+                st.warning(f"⚠️ Il campionato selezionato '{excel_country}' non è presente nel database.")
                 return
-
-            df_filtered = df_filtered[df_filtered["country"] == db_selected]
+            df_filtered = df_filtered[df_filtered["country"] == excel_country]
 
             run_macro_stats(df_filtered, db_selected)
             run_team_stats(df_filtered, db_selected)
             run_pre_match(df_filtered, db_selected)
             run_correct_score_ev(df_filtered, db_selected)
+            run_live_minute_analysis(df_filtered)
 
             if st.button("🔙 Torna indietro"):
                 del st.session_state["selected_match"]
