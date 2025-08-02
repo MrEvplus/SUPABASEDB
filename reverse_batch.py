@@ -20,8 +20,10 @@ def run_reverse_batch(df):
     st.info(f"📊 Partite trovate per il {selected_date.strftime('%d/%m/%Y')}: {len(df_day)}")
 
     risultati = []
+    esclusi = []
 
     for _, row in df_day.iterrows():
+        motivo = []
         home = row["Home"]
         away = row["Away"]
         label = label_match(row)
@@ -34,16 +36,24 @@ def run_reverse_batch(df):
         data_match = row["Data"]
 
         if pd.isna(quota_over) or pd.isna(quota_under):
+            motivo.append('Quote mancanti')
+            esclusi.append({'Match': f'{home} vs {away}', 'Motivo': motivo})
+            continue
             continue
 
         df["Label"] = df.apply(label_match, axis=1)
         df_passato = df[(df["Data"] < data_match) & (df["Label"] == label)].copy()
 
-        if df_filtrato.empty:
+        if df_passato.empty:
+            motivo.append('Nessun match storico con stesso label')
+            esclusi.append({'Match': f'{home} vs {away}', 'Motivo': motivo})
+            continue
             continue
 
         df_validi = df_filtrato.dropna(subset=["Home Goal FT", "Away Goal FT"])
         if df_validi.empty:
+            motivo.append('Dati storici privi di risultati')
+            esclusi.append({'Match': f'{home} vs {away}', 'Motivo': motivo})
             continue
 
         # EV Over 2.5
