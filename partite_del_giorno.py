@@ -66,7 +66,7 @@ def run_partite_del_giorno(df, db_selected):
         # ✅ MOSTRA LISTA PARTITE CON CAMPIONATO E DATA
         st.markdown("### 📋 Lista Partite del Giorno")
 
-        colonne_presenti = df_today.columns.str.lower()
+        colonne_presenti = pd.Series(df_today.columns).str.lower()
         col_data = next((c for c in colonne_presenti if "data" in c or "datameci" in c), None)
         col_league = next((c for c in colonne_presenti if "league" in c or "etapa" in c), None)
 
