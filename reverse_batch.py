@@ -2,11 +2,11 @@
 import streamlit as st
 import pandas as pd
 from utils import label_match
-from squadre import compute_team_macro_stats
+from squadre import compute_team_macro_stats, is_match_played, parse_goal_times
 from datetime import datetime
 
 def run_reverse_batch(df):
-    st.title("🧠 Reverse Batch - Analisi multipla EV+")
+    st.title("🧠 Reverse Batch - EV+, Statistiche & Goal Patterns")
 
     df["Data"] = pd.to_datetime(df["Data"], errors="coerce").dt.normalize()
     selected_date = st.date_input("📅 Seleziona una data da analizzare:", value=datetime.today().date())
@@ -28,6 +28,8 @@ def run_reverse_batch(df):
         quota_under = row.get("odd under 2,5", None)
         gol_home = row.get("Home Goal FT", 0)
         gol_away = row.get("Away Goal FT", 0)
+        pos_home = row.get("Posizione Classifica Home", None)
+        pos_away = row.get("Posizione classifica away", None)
         data_match = row["Data"]
 
         if pd.isna(quota_over) or pd.isna(quota_under):
@@ -44,23 +46,59 @@ def run_reverse_batch(df):
         if df_validi.empty:
             continue
 
+        # EV Over 2.5
         over_hits = (df_validi["Home Goal FT"] + df_validi["Away Goal FT"] > 2.5).sum()
         total_matches = len(df_validi)
         over_pct = over_hits / total_matches if total_matches > 0 else 0
-
         ev_over = (quota_over * over_pct) - 1
         match_result = "✅" if (gol_home + gol_away) > 2.5 else "❌"
         profitto = (quota_over - 1) if match_result == "✅" else -1
 
+        # Goal pattern → chi ha segnato per primo
+        timeline_home = parse_goal_times(row.get("minuti goal segnato home", ""))
+        timeline_away = parse_goal_times(row.get("minuti goal segnato away", ""))
+        first_goal = None
+        if timeline_home or timeline_away:
+            primo_home = min(timeline_home) if timeline_home else 999
+            primo_away = min(timeline_away) if timeline_away else 999
+            if primo_home < primo_away:
+                first_goal = "HOME"
+            elif primo_away < primo_home:
+                first_goal = "AWAY"
+            else:
+                first_goal = "PARI"
+
+        recuperato = "-"
+        if first_goal == "HOME" and gol_home == gol_away:
+            recuperato = "Pareggio"
+        elif first_goal == "HOME" and gol_home < gol_away:
+            recuperato = "Ribaltata"
+        elif first_goal == "AWAY" and gol_away == gol_home:
+            recuperato = "Pareggio"
+        elif first_goal == "AWAY" and gol_away < gol_home:
+            recuperato = "Ribaltata"
+
+        # Macro stats per casa e trasferta
+        stat_home = compute_team_macro_stats(df_passato, home, "Home")
+        stat_away = compute_team_macro_stats(df_passato, away, "Away")
+
         risultati.append({
             "Match": f"{home} vs {away}",
             "Label": label,
-            "Quota Over 2.5": quota_over,
-            "Probabilità Over": round(over_pct * 100, 1),
-            "EV Over": round(ev_over * 100, 1),
-            "Risultato Reale": f"{gol_home}-{gol_away}",
+            "Pos Home": pos_home,
+            "Pos Away": pos_away,
+            "Over 2.5": quota_over,
+            "Prob Over %": round(over_pct * 100, 1),
+            "EV Over %": round(ev_over * 100, 1),
+            "Risultato": f"{gol_home}-{gol_away}",
             "Esito": match_result,
-            "Profitto Over": round(profitto, 2)
+            "Profitto": round(profitto, 2),
+            "1° Gol": first_goal or "-",
+            "Recupero": recuperato,
+            "Win % Home": stat_home.get("Win %", 0),
+            "Win % Away": stat_away.get("Win %", 0),
+            "BTTS % Home": stat_home.get("BTTS %", 0),
+            "BTTS % Away": stat_away.get("BTTS %", 0)
         })
 
     if risultati:
