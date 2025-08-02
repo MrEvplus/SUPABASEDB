@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import pandas as pd
 from utils import label_match
@@ -39,7 +37,6 @@ def run_reverse_batch(df):
             motivo.append('Quote mancanti')
             esclusi.append({'Match': f'{home} vs {away}', 'Motivo': motivo})
             continue
-            continue
 
         df["Label"] = df.apply(label_match, axis=1)
         df_passato = df[(df["Data"] < data_match) & (df["Label"] == label)].copy()
@@ -48,9 +45,8 @@ def run_reverse_batch(df):
             motivo.append('Nessun match storico con stesso label')
             esclusi.append({'Match': f'{home} vs {away}', 'Motivo': motivo})
             continue
-            continue
 
-        df_validi = df_filtrato.dropna(subset=["Home Goal FT", "Away Goal FT"])
+        df_validi = df_passato.dropna(subset=["Home Goal FT", "Away Goal FT"])
         if df_validi.empty:
             motivo.append('Dati storici privi di risultati')
             esclusi.append({'Match': f'{home} vs {away}', 'Motivo': motivo})
@@ -116,5 +112,10 @@ def run_reverse_batch(df):
         st.dataframe(df_out, use_container_width=True)
         csv = df_out.to_csv(index=False).encode("utf-8")
         st.download_button("💾 Scarica CSV", data=csv, file_name="reverse_batch_output.csv", mime="text/csv")
-    else:
+
+    # Mostra SEMPRE la tabella di debug dei match esclusi
+    if esclusi:
+        st.subheader("📛 Match esclusi dal calcolo EV+ (debug)")
+        st.dataframe(pd.DataFrame(esclusi), use_container_width=True)
+    elif not risultati:
         st.warning("⚠️ Nessun match valido per il calcolo EV+.")
