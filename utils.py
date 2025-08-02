@@ -52,7 +52,7 @@ def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):"
     # Seleziona campionato
     campionato_scelto = st.sidebar.selectbox(
         "Seleziona Campionato:",
-        [""] + campionati_disponibili,
+        ["Tutti"] + campionati_disponibili,
         index=1 if len(campionati_disponibili) > 0 else 0,
         key="selectbox_campionato_duckdb"
     )
@@ -61,8 +61,8 @@ def load_data_from_supabase(parquet_label="Parquet file URL (Supabase Storage):"
         st.info("ℹ️ Seleziona un campionato per procedere.")
         st.stop()
 
-    # Filtra solo il campionato scelto
-    df_filtered = df_all[df_all["country"] == campionato_scelto]
+    # Filtra solo se campionato specifico selezionato
+    df_filtered = df_all if campionato_scelto == "Tutti" else df_all[df_all["country"] == campionato_scelto]
 
     # 🔥 Estrai stagioni disponibili da questo campionato
     if "sezonul" in df_filtered.columns:
@@ -156,7 +156,7 @@ def load_data_from_file():
 
     campionato_scelto = st.sidebar.selectbox(
         "Seleziona Campionato:",
-        [""] + campionati_disponibili,
+        ["Tutti"] + campionati_disponibili,
         key="selectbox_campionato_upload"
     )
 
