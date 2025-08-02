@@ -51,7 +51,7 @@ menu_option = st.sidebar.radio(
         "Correct Score EV",
         "Analisi Live da Minuto",
         "Partite del Giorno",
-        "🧠 Reverse Engineering EV+"
+        "🧠 Reverse Engineering EV+",
     ]
 )
 
