@@ -65,6 +65,25 @@ def run_single_analysis(df):
 
 def run_reverse_engineering(df):
     st.title("🧠 Reverse Engineering EV+")
+    with st.expander("ℹ️ Come funziona la sezione Reverse Engineering EV+", expanded=True):
+        st.markdown("""
+### 📋 **Cosa trovi in questa sezione?**
+
+- **Analisi Singola**
+    - Analizza una singola partita storica a scelta dal calendario.
+    - Simula, con dati disponibili fino al giorno prima, tutti gli indicatori (label, quote, EV+) e mostra cosa avresti potuto prevedere realmente pre-match.
+    - Utile per studio casi singoli, debug strategie, confronto tra dati attesi e risultati effettivi.
+
+- **Batch Giornaliero**
+    - Analizza **tutte le partite giocate in una data** su uno o più campionati.
+    - Per ogni partita calcola in retrospettiva il valore atteso e le statistiche, usando solo dati disponibili fino a quel giorno.
+    - Perfetto per validare pattern, trovare ricorrenze, studiare bias di mercato su grandi numeri.
+
+- **Pattern Ricorrenti**
+    - Riassume e filtra i risultati ottenuti dai batch giornalieri.
+    - Evidenzia i range di quote, mercati o condizioni che producono valore atteso positivo (EV+) su base storica.
+    - Serve a costruire strategie automatiche, scoprire “regole d’oro” e decisioni replicabili per il trading sportivo.
+    """)
 
     tab1, tab2, tab3 = st.tabs(["📅 Analisi Singola", "📦 Batch Giornaliero", "🔍 Pattern Ricorrenti"])
 
